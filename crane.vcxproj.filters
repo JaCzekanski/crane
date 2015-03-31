@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\resource">
+      <UniqueIdentifier>{2908eb9c-a8d2-41f7-832e-37b501da9b6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\resource">
+      <UniqueIdentifier>{fe9ad8ae-6baf-45e0-b64f-f413316153c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\resource\shader">
+      <UniqueIdentifier>{f975e1b4-555d-44c4-8ca5-2600aca63fb0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\resource\shader">
+      <UniqueIdentifier>{de6ac40b-3c62-4fbc-940a-eabb27d72b7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\resource\texture">
+      <UniqueIdentifier>{28b5bb51-3582-46c8-8ca5-a3daf284c73c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\resource\texture">
+      <UniqueIdentifier>{3a4a0d19-135a-4f53-994c-6529af0718a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{85df2890-7cfa-4ca0-a2c8-c558a869b58b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\utils">
+      <UniqueIdentifier>{09895b47-ac3e-42ad-a760-117ee8fe929e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\resource\model">
+      <UniqueIdentifier>{c9658f78-d016-49ce-8f9e-bfea848a754c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\resource\model">
+      <UniqueIdentifier>{9ef5e8d1-86d2-4f57-8bde-c106f5cf3bd9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Game.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl_core_3_2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resource\ResourceManager.cpp">
+      <Filter>Source Files\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resource\Resource.cpp">
+      <Filter>Source Files\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resource\shader\Program.cpp">
+      <Filter>Source Files\resource\shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resource\shader\Shader.cpp">
+      <Filter>Source Files\resource\shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resource\texture\Texture.cpp">
+      <Filter>Source Files\resource\texture</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\file.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resource\model\Model.cpp">
+      <Filter>Source Files\resource\model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui_sdl2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl_core_3_2.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\Resource.h">
+      <Filter>Header Files\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\ResourceManager.h">
+      <Filter>Header Files\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\shader\Program.h">
+      <Filter>Header Files\resource\shader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\shader\Shader.h">
+      <Filter>Header Files\resource\shader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\texture\Texture.h">
+      <Filter>Header Files\resource\texture</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\file.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\model\Model.h">
+      <Filter>Header Files\resource\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui_sdl2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

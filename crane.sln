@@ -24,12 +24,11 @@ Global
 		{99A5CE40-F51F-46B8-B92F-48E28C7A6421}.Debug|Win32.Build.0 = Debug|Win32
 		{99A5CE40-F51F-46B8-B92F-48E28C7A6421}.Release|Win32.ActiveCfg = Release|Win32
 		{99A5CE40-F51F-46B8-B92F-48E28C7A6421}.Release|Win32.Build.0 = Release|Win32
-		{A9BB841D-429A-4498-A19F-44B35163F852}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A9BB841D-429A-4498-A19F-44B35163F852}.Debug|Win32.Build.0 = Debug|Win32
-		{A9BB841D-429A-4498-A19F-44B35163F852}.Release|Win32.ActiveCfg = Release|Win32
-		{A9BB841D-429A-4498-A19F-44B35163F852}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

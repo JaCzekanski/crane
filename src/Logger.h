@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <ctime>
-
+#include <SDL.h>
 /*
 Logger::Open( const char* file );
 Logger::Info( const char* format, ... );

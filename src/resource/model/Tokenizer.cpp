@@ -1,14 +1,14 @@
-#include "Tokenizer.h"
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include "Tokenizer.h"
+#include "Token.h"
 
-Tokenizer::Tokenizer(std::string s)
+Tokenizer::Tokenizer(std::string &s) : line(s)
 {
-	line = s;
 	pos = -1;
 	len = line.length();
-	line += ' ';
+	//line += ' ';
 }
 
 
@@ -19,7 +19,7 @@ Tokenizer::~Tokenizer()
 Token Tokenizer::getToken()
 {
 	Token token;
-	string word;
+	std::string word;
 	pos++;
 	bool comment = false;
 	bool lineEnd = false;
@@ -35,14 +35,18 @@ Token Tokenizer::getToken()
 		else if (line[pos] == '\n' || (line[pos] == '\r' && line[pos+1] == '\n')) 
 		{
 			lineEnd = true;
-			if (word.empty()) token.type = TokenType::Empty;
-			else pos--;
+			if (word.empty()) token.type = Token::Type::Empty;
+			else 
+			{
+				pos--;
+				currentLine++;
+			}
 			break;
 		}
 		else if (line[pos] == '#') comment = true;
 		else if (line[pos] == '/') 
 		{
-			if (word.empty()) token.type = TokenType::Separator;
+			if (word.empty()) token.type = Token::Type::Separator;
 			else pos--;
 			break; // Face Separator
 		}
@@ -52,8 +56,8 @@ Token Tokenizer::getToken()
 	if (pos >= len) available = false;
 	if (word.empty())
 	{
-		if (lineEnd) token.type = TokenType::Empty;
-		if (pos >= len) token.type = TokenType::Empty;
+		if (lineEnd) token.type = Token::Type::Empty;
+		if (pos >= len) token.type = Token::Type::Empty;
 		return token;
 	}
 
@@ -61,14 +65,14 @@ Token Tokenizer::getToken()
 	if (isdigit(word[0]) || word[0] == '-')
 	{
 		number = true;
-		token.type = TokenType::Int;
+		token.type = Token::Type::Int;
 	}
 	else if (word[0] == '.')
 	{
 		number = true;
-		token.type = TokenType::Float;
+		token.type = Token::Type::Float;
 	}
-	else token.type = TokenType::String;
+	else token.type = Token::Type::String;
 
 	// Analyze token
 	token.i = 0;
@@ -78,18 +82,18 @@ Token Tokenizer::getToken()
 		{
 			if (word[i] == '.')
 			{
-				if (token.type == TokenType::Float)
+				if (token.type == Token::Type::Float)
 				{
-					token.type = TokenType::Invalid; // Multiple commas
+					token.type = Token::Type::Invalid; // Multiple commas
 					break;
 				}
-				token.type = TokenType::Float;
+				token.type = Token::Type::Float;
 			}
 			else if (word[i] == '-')
 			{
 				if (token.negative)
 				{
-					token.type = TokenType::Invalid; // Multiple negation
+					token.type = Token::Type::Invalid; // Multiple negation
 					break;
 				}
 				token.negative = true;
@@ -97,11 +101,11 @@ Token Tokenizer::getToken()
 			// Add '+'
 			else if (!isdigit(word[i]))
 			{
-				token.type = TokenType::Invalid;
+				token.type = Token::Type::Invalid;
 				break;
 			}
 
-			if (token.type == TokenType::Int)
+			if (token.type == Token::Type::Int)
 			{
 				token.i *= 10;
 				token.i += word[i] - '0';
@@ -109,8 +113,8 @@ Token Tokenizer::getToken()
 		}
 		else token.s += word[i];
 	}
-	if (token.type == TokenType::Float) token.f = atof(word.c_str());
-	if (token.negative && token.type == TokenType::Int) token.i = -token.i;
+	if (token.type == Token::Type::Float) token.f = atof(word.c_str());
+	if (token.negative && token.type == Token::Type::Int) token.i = -token.i;
 
 	return token;
 }
@@ -118,4 +122,13 @@ Token Tokenizer::getToken()
 int Tokenizer::getPosition()
 {
 	return pos;
+}
+
+void Tokenizer::nextLine()
+{
+	for (;;)
+	{
+		Token t = getToken();
+		if ( !tokenAvailable() || t.type == Token::Type::Empty ) break;
+	}
 }

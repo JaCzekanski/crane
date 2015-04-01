@@ -82,8 +82,9 @@ float pitch = 0, yaw = 0, roll = 0;
 float pos_x = 0;
 GLuint vao;
 
-int currentModel = 1;
+int currentModel = 0;
 const char* models[] = {
+	//"test",
 	"knot",
 	"dragon",
 	"monkey",
@@ -102,20 +103,20 @@ void Game::Run()
 	gl::GenVertexArrays(1, &vao);
 	gl::BindVertexArray(vao);
 
-	for (std::string m : models)
-	{
-		if (!resourceManager.loadModel(m))
-		{
-			logger.Fatal("%s", "Cannot load model");
-			return;
-		}
-	}
+	//for (std::string m : models)
+	//{
+	//	if (!resourceManager.loadModel(m))
+	//	{
+	//		logger.Fatal("%s", "Cannot load model");
+	//		return;
+	//	}
+	//}
 
-	if (!resourceManager.loadProgram("normal"))
-	{
-		logger.Fatal("%s", "Cannot load program");
-		return;
-	}
+	//if (!resourceManager.loadProgram("normal"))
+	//{
+	//	logger.Fatal("%s", "Cannot load program");
+	//	return;
+	//}
 
 	resourceManager.getModel(modelName)->use();
 

@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstdarg>
 #include <ctime>
+#include <deque>
+#include <string>
 
 /*
 Logger::Open( const char* file );
@@ -28,12 +30,20 @@ enum LogType
 	LOG_DEBUG = 4
 };
 
+struct Message
+{
+	LogType type;
+	std::string message;
+};
+
 class Logger
 {
 private:
 	FILE* file;
 	bool initialized = false;
 	bool verbose = false;
+
+	std::deque<Message> messages;
 
 	void Log(int type, const char* format, va_list list)
 	{
@@ -87,6 +97,12 @@ private:
 
 		char bigbuffer[4096];
 		sprintf(bigbuffer, "[%s][%s]\t%s\n", _time, _logtype, buffer);
+
+		Message m;
+		m.type = (LogType)type;
+		m.message = std::string(bigbuffer);
+		messages.push_back(m);
+		if (messages.size() > 4) messages.pop_front();
 		//OutputDebugString(bigbuffer);
 	}
 	void Open(const char* filename)
@@ -169,5 +185,9 @@ public:
 		Log(LOG_DEBUG, format, list);
 		va_end(list);
 		#endif
+	}
+
+	std::deque<Message>& getMessages() {
+		return messages;
 	}
 };

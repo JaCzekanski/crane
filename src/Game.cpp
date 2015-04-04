@@ -309,6 +309,23 @@ void Game::Render()
 	ImGui::Checkbox("Wireframe mode", &wireframe);
 	ImGui::SliderAngle("FOV", &fov, 45, 120);
 
+	if (ImGui::Button("Fatal")) logger.Fatal("Button");
+
+	bool popup = false;
+	ImGui::BeginPopup(&popup);
+	for (auto m : logger.getMessages()) {
+		ImVec4 colors[] = {
+			{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
+			{ 0.0f, 1.0f, 0.0f, 1.0f }, //LOG_SUCCESS = 1,
+			{ 0.7f, 0.3f, 0.3f, 1.0f }, //LOG_ERROR = 2,
+			{ 1.0f, 0.0f, 0.0f, 1.0f }, //LOG_FATAL = 3,
+			{ 1.0f, 1.0f, 0.0f, 1.0f }, //LOG_DEBUG = 4
+		};
+
+		ImGui::TextColored(colors[m.type], m.message.c_str());
+	}
+	ImGui::EndPopup();
+
 	ImGui::Render();
 	SDL_GL_SwapWindow(mainWindow);
 }

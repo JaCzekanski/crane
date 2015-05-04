@@ -117,6 +117,13 @@ void Game::Run()
 		return;
 	}
 
+	if (!resourceManager.loadTexture("canvas"))
+	{
+		logger.Fatal("%s", "Cannot load texture");
+		return;
+	}
+	resourceManager.getTexture("canvas")->use();
+
 	resourceManager.getModel(modelName)->use();
 
 	auto program = resourceManager.getProgram("normal");
@@ -278,6 +285,7 @@ void Game::Render()
 	gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
 	gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	gl::Uniform1i(program->getUniform("tex"), 0);
 
 	int verticeCount = 0;
 	for (int i = 0; i < meshCount; i++)

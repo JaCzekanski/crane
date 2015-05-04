@@ -46,6 +46,19 @@ bool ResourceManager::loadModel(std::string name)
 	logger.Error("Cannot load %s", name.c_str());
 	return false;
 }
+
+bool ResourceManager::loadTexture(std::string name)
+{
+	std::shared_ptr<Texture> texture(new Texture(dataFolder + "/" + textureFolder + "/" + name));
+	if (texture->load())
+	{
+		textures.emplace(name, texture);
+		return true;
+	}
+	logger.Error("Cannot load %s", name.c_str());
+	return false;
+}
+
 void ResourceManager::scanAndReload()
 {
 	//for (auto it = Textures.begin(); it != Textures.end(); ++it)
@@ -87,6 +100,17 @@ void ResourceManager::scanAndReload()
 		{
 			SDL_Delay(5000);
 			if (m.second->load()) logger.Success("%s reload", m.second->info.name.c_str());
+		}
+
+	}
+	for (auto t : textures)
+	{
+		struct _stat newinfo;
+		_stat(t.second->info.name.c_str(), &newinfo);
+		if (newinfo.st_mtime != t.second->info.info.st_mtime)
+		{
+			SDL_Delay(5000);
+			if (t.second->load()) logger.Success("%s reload", t.second->info.name.c_str());
 		}
 
 	}

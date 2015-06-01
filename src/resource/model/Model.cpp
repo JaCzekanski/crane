@@ -19,6 +19,7 @@ bool Model::load()
 	char buf[1024];
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec3> normals;
+	std::vector<glm::vec2> texcoords;
 	std::vector<modelVertice> data;
 	FILE *obj = fopen((name+".obj").c_str(), "rb");
 	if (!obj) return false;
@@ -37,6 +38,8 @@ bool Model::load()
 		{
 			glm::vec2 v;
 			sscanf(buf, "%*c%*c %f %f", &v.x, &v.y);
+			v[1] = -v[1];
+			texcoords.push_back(v);
 		}
 		else if (buf[0] == 'v')
 		{
@@ -48,16 +51,18 @@ bool Model::load()
 		{
 			int v[3];
 			int vn[3];
-			sscanf(buf, "%*c %d%*c%*c%d %d%*c%*c%d %d%*c%*c%d",
-				&v[0], &vn[0],
-				&v[1], &vn[1],
-				&v[2], &vn[2]);
+			int vt[3];
+			sscanf(buf, "%*c %d%*c%d%*c%d %d%*c%d%*c%d %d%*c%d%*c%d",
+				&v[0], &vt[0], &vn[0],
+				&v[1], &vt[1], &vn[1],
+				&v[2], &vt[2], &vn[2]);
 
 			for (int i = 0; i < 3; i++)
 			{
 				modelVertice mv;
 				mv.position = vertices[v[i] - 1];
 				mv.normal = normals[vn[i] - 1];
+				mv.texcoord = texcoords[vt[i] - 1];
 				data.push_back(mv);
 			}
 		}

@@ -2,7 +2,7 @@
 
 in vec3 fragNormal;
 in vec3 fragPosition;
-in vec2 fragCoords;
+in vec2 fragCoord;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -34,5 +34,5 @@ void main()
 
 	vec3 color = brightness * diffuseColor + brightness_ * diffuse_Color + ambientColor;
 
-	gl_FragColor =  texture2D(tex, fragCoords) * vec4( color, 1.0 );
+	gl_FragColor =  texture2D(texture, fragCoord) * vec4( color, 1.0 );
 }

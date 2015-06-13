@@ -39,15 +39,20 @@ private:
 	State::State gameState = State::Menu;
 	bool initialized = false;
 
+
 	// Temporary
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;
 	float cameraPitch, cameraYaw;
 	glm::vec3 lightPosition;
 	float lightAngle;
 
+	GLuint vao;
+
+
 	void Input(float dt);
 	void Step(float dt);
 	void Render();
+	void drawGUI();
 
 	void keyDown(SDL_Keycode key);
 	void keyUp(SDL_Keycode key);

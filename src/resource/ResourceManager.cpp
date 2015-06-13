@@ -61,25 +61,10 @@ bool ResourceManager::loadTexture(std::string name)
 
 void ResourceManager::scanAndReload()
 {
-	//for (auto it = Textures.begin(); it != Textures.end(); ++it)
-	//{
-	//	struct _stat newinfo;
-	//	_stat(it->second->filename.c_str(), &newinfo);
-
-	//	if (newinfo.st_mtime != it->second->info.st_mtime)
-	//	{
-	//		// Reload
-	//		std::string filename = it->second->filename;
-	//		std::string name = it->first;
-	//		printf("%s reload\n", name.c_str());
-	//		it = Textures.erase(it);
-	//		loadTexture(name, filename);
-	//		return;
-	//	}
-	//}
+	time_t currentTime = time(NULL);
+	struct _stat newinfo;
 	for (auto p : programs)
 	{
-		struct _stat newinfo;
 		for (auto i : p.second->info)
 		{
 			_stat(i.name.c_str(), &newinfo);
@@ -94,22 +79,18 @@ void ResourceManager::scanAndReload()
 	}
 	for (auto m : models)
 	{
-		struct _stat newinfo;
 		_stat(m.second->info.name.c_str(), &newinfo);
-		if (newinfo.st_mtime != m.second->info.info.st_mtime)
+		if (newinfo.st_mtime != m.second->info.info.st_mtime && currentTime != newinfo.st_mtime)
 		{
-			SDL_Delay(5000);
 			if (m.second->load()) logger.Success("%s reload", m.second->info.name.c_str());
 		}
 
 	}
 	for (auto t : textures)
 	{
-		struct _stat newinfo;
 		_stat(t.second->info.name.c_str(), &newinfo);
-		if (newinfo.st_mtime != t.second->info.info.st_mtime)
+		if (newinfo.st_mtime != t.second->info.info.st_mtime && currentTime != newinfo.st_mtime)
 		{
-			SDL_Delay(5000);
 			if (t.second->load()) logger.Success("%s reload", t.second->info.name.c_str());
 		}
 

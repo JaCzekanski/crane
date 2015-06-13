@@ -78,17 +78,12 @@ Game::~Game()
 	SDL_Quit();
 }
 
-float pitch = 0, yaw = 0, roll = 0;
-float pos_x = 0;
-GLuint vao;
-
 int currentModel = 0;
 const char* models[] = {
 	"cube",
 	"bunny"
 };
-std::string modelName = models[currentModel];
-std::vector<glm::vec3> meshPositions;
+int modelCount = 2;
 
 void Game::Run() 
 {
@@ -97,31 +92,7 @@ void Game::Run()
 	
 	gl::GenVertexArrays(1, &vao);
 	gl::BindVertexArray(vao);
-
-	//for (std::string m : models)
-	//{
-	//	if (!resourceManager.loadModel(m))
-	//	{
-	//		logger.Fatal("%s", "Cannot load model");
-	//		return;
-	//	}
-	//}
-
-	//if (!resourceManager.loadProgram("normal"))
-	//{
-	//	logger.Fatal("%s", "Cannot load program");
-	//	return;
-	//}
-
-	if (!resourceManager.loadTexture("bunny"))
-	{
-		logger.Fatal("%s", "Cannot load texture");
-		return;
-	}
-	resourceManager.getTexture("bunny")->use();
-
-	resourceManager.getModel(modelName)->use();
-
+	
 	auto program = resourceManager.getProgram("normal");
 	gl::EnableVertexAttribArray(program->getAttrib("position"));
 	gl::EnableVertexAttribArray(program->getAttrib("normal"));
@@ -133,12 +104,6 @@ void Game::Run()
 
 	cameraYaw = M_PI;
 
-	//gl::LineWidth(2.0f);
-
-	meshPositions.push_back(glm::vec3());
-	for (int i = 1; i < 100; i++)
-		meshPositions.push_back(glm::vec3((rand() % 100) - 50, (rand() % 100) - 50, (rand() % 100) - 50));
-
 	focusGained();
 
 	float dt = 0.0f; // Czas od ostatniej klatki
@@ -149,7 +114,6 @@ void Game::Run()
 
 	while (gameState != State::Quit)
 	{
-
 		dt = (((float)SDL_GetTicks()) / 1000.0f) - lastUpdate;
 		lastUpdate += dt;
 		dt = std::max(0.0f, dt);
@@ -162,13 +126,11 @@ void Game::Run()
 			Step(TIME_STEP);
 			accumulator -= TIME_STEP;
 		}
-		ImGui_SDL2_NewFrame();
 		Render();
 		SDL_Delay(1);
 	}
 
 }
-
 
 void Game::Input(float dt)
 {
@@ -231,15 +193,11 @@ void Game::Input(float dt)
 
 void Game::Step(float dt)
 {
-	lightAngle += dt;
-	if (lightAngle > glm::radians(360.f)) lightAngle = 0;
 	lightPosition = glm::vec3(20 * cos(lightAngle), 0.0, 20 * sin(lightAngle));
 }
 
 bool wireframe;
 float fov = glm::radians(60.f);
-int meshCount = 1;
-
 
 void Game::Render()
 {
@@ -254,19 +212,20 @@ void Game::Render()
 	gl::ClearDepth(1.0f);
 	gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-
 	gl::BindVertexArray(vao);
 
 	auto program = resourceManager.getProgram("normal");
 	program->use();
 
-	auto mesh = resourceManager.getModel(modelName);
+	auto texture = resourceManager.getTexture(models[currentModel]);
+	texture->use();
+
+	auto mesh = resourceManager.getModel(models[currentModel]);
 	mesh->use();
 
 	gl::VertexAttribPointer(program->getAttrib("position"), 3, gl::FLOAT, false, sizeof(modelVertice), 0);
 	gl::VertexAttribPointer(program->getAttrib("normal"), 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
 	gl::VertexAttribPointer(program->getAttrib("texcoord"), 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
-
 	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 10000.0f);
 
 	cameraDirection = glm::vec3(
@@ -285,41 +244,26 @@ void Game::Render()
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
 	gl::Uniform1i(program->getUniform("texture"), 0);
 
-	int verticeCount = 0;
-	for (int i = 0; i < meshCount; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0);
-		model = glm::translate(model, meshPositions[i]);
-		model = glm::rotate(model, pitch, glm::vec3(1, 0, 0));
-		model = glm::rotate(model, yaw,   glm::vec3(0, 1, 0));
-		model = glm::rotate(model, roll,  glm::vec3(0, 0, 1));
+	glm::mat4 model = glm::mat4(1.0);
+	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+	gl::DrawArrays(gl::TRIANGLES, 0, mesh->getSize());
 
-		gl::BindTexture(gl::TEXTURE_2D, resourceManager.getTexture("bunny")->get());
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		gl::DrawArrays(gl::TRIANGLES, 0, mesh->getSize());
-		verticeCount += mesh->getSize();
-	}
 
+	drawGUI();
+	SDL_GL_SwapWindow(mainWindow);
+}
+
+void Game::drawGUI()
+{
+	ImGui_SDL2_NewFrame();
 	ImGui::Text("Object");
-	ImGui::Text("Vertices: %d", verticeCount);
-	if (ImGui::Combo("Model", &currentModel, models, 2)) modelName = std::string(models[currentModel]);
-	ImGui::SliderAngle("Pitch", &pitch, -180.f, 180.f);
-	ImGui::SliderAngle("Yaw", &yaw, -180.f, 180.f);
-	ImGui::SliderAngle("Roll", &roll, -180.f, 180.f);
-
-	ImGui::SliderInt("Count", &meshCount, 1, 100);
-
-	ImGui::Text("Light");
-	ImGui::SliderAngle("X", (float*)&lightAngle, 0, 360);
+	ImGui::Combo("Model", &currentModel, models, modelCount);
 
 	ImGui::Text("Options");
 	ImGui::Checkbox("Wireframe mode", &wireframe);
 	ImGui::SliderAngle("FOV", &fov, 45, 120);
 
-	if (ImGui::Button("Fatal")) logger.Fatal("Button");
-
-	bool popup = false;
-	ImGui::Begin("Console", &popup);
+	ImGui::Begin("Console");
 	for (auto m : logger.getMessages()) {
 		ImVec4 colors[] = {
 			{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
@@ -332,9 +276,7 @@ void Game::Render()
 		ImGui::TextColored(colors[m.type], m.message.c_str());
 	}
 	ImGui::End();
-
 	ImGui::Render();
-	SDL_GL_SwapWindow(mainWindow);
 }
 
 

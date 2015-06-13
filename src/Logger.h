@@ -102,7 +102,7 @@ private:
 		m.type = (LogType)type;
 		m.message = std::string(bigbuffer);
 		messages.push_back(m);
-		if (messages.size() > 4) messages.pop_front();
+		if (messages.size() > 6) messages.pop_front();
 		//OutputDebugString(bigbuffer);
 	}
 	void Open(const char* filename)
@@ -149,7 +149,6 @@ public:
 	}
 	void Info(const char* format, ...)
 	{
-		if (!verbose) return;
 		va_list list;
 		va_start(list, format);
 		Log(LOG_INFO, format, list);
@@ -157,7 +156,6 @@ public:
 	}
 	void Success(const char* format, ...)
 	{
-		if (!verbose) return;
 		va_list list;
 		va_start(list, format);
 		Log(LOG_SUCCESS, format, list);
@@ -179,12 +177,11 @@ public:
 	}
 	void Debug(const char* format, ...)
 	{
-		#ifdef _DEBUG
+		if (!verbose) return;
 		va_list list;
 		va_start(list, format);
 		Log(LOG_DEBUG, format, list);
 		va_end(list);
-		#endif
 	}
 
 	std::deque<Message>& getMessages() {

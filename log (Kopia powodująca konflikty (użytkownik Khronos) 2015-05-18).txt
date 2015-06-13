@@ -1,8 +1,0 @@
-[16:02:45][SUCCESS]	SDL initialized
-[16:02:45][SUCCESS]	Main window created
-[16:02:45][SUCCESS]	OpenGL context created
-[16:02:45][SUCCESS]	OpenGL functions loaded
-[16:02:45][INFO]	Graphics card: GeForce GT 635M/PCIe/SSE2
-[16:02:45][INFO]	OpenGL version: 3.2
-[16:02:46][DEBUG]	Focus gained
-[16:02:48][DEBUG]	Focus lost

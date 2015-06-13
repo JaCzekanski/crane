@@ -22,15 +22,14 @@ private:
 	std::unordered_map<std::string, std::shared_ptr<Model>> models;
 	std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
 
-
 	bool checkFile(const std::string file);
-public:
-	ResourceManager();
-	~ResourceManager();
 
 	bool loadProgram(std::string name);
 	bool loadModel(std::string name);
 	bool loadTexture(std::string name);
+public:
+	ResourceManager();
+	~ResourceManager();
 
 	std::shared_ptr<Program> getProgram(const std::string& id)
 	{
@@ -40,6 +39,7 @@ public:
 				logger.Fatal("Cannot load program %s", id.c_str());
 				return std::shared_ptr<Program>();
 			}
+			logger.Success("Program %s loaded", id.c_str());
 			return programs.find(id)->second;
 		}
 		return p->second;
@@ -53,6 +53,7 @@ public:
 				logger.Fatal("Cannot load model %s", id.c_str());
 				return std::shared_ptr<Model>();
 			}
+			logger.Success("Model %s loaded", id.c_str());
 			return models.find(id)->second;
 		}
 		return p->second;
@@ -61,10 +62,17 @@ public:
 	std::shared_ptr<Texture> getTexture(const std::string& id)
 	{
 		auto p = textures.find(id);
-		if (p == textures.end()) return std::shared_ptr<Texture>();
+		if (p == textures.end()) {
+
+			if (!loadTexture(id)) {
+				logger.Fatal("Cannot load texture %s", id.c_str());
+				return std::shared_ptr<Texture>();
+			}
+			logger.Success("Texture %s loaded", id.c_str());
+			return textures.find(id)->second;
+		}
 		return p->second;
 	}
-
 
 	void scanAndReload();
 };

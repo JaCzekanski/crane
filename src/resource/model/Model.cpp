@@ -105,6 +105,7 @@ bool Model::load()
 				else if (t.type != Token::Type::Separator) error("separator");// No texcoords
 
 				t = tokenizer.getToken();
+				if (t.type == Token::Type::Separator) t = tokenizer.getToken();
 				if (t.type == Token::Type::Int) {
 					vn[i] = t.i;
 					normal = true;

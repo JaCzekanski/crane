@@ -84,13 +84,8 @@ GLuint vao;
 
 int currentModel = 0;
 const char* models[] = {
-	//"test",
-	"knot",
-	"dragon",
-	"monkey",
 	"bunny",
-	"horse",
-	"crane"
+	"cube"
 };
 std::string modelName = models[currentModel];
 std::vector<glm::vec3> meshPositions;
@@ -296,7 +291,7 @@ void Game::Render()
 
 	ImGui::Text("Object");
 	ImGui::Text("Vertices: %d", verticeCount);
-	if (ImGui::Combo("Model", &currentModel, models, 6)) modelName = std::string(models[currentModel]);
+	if (ImGui::Combo("Model", &currentModel, models, 2)) modelName = std::string(models[currentModel]);
 	ImGui::SliderAngle("Pitch", &pitch, -180.f, 180.f);
 	ImGui::SliderAngle("Yaw", &yaw, -180.f, 180.f);
 	ImGui::SliderAngle("Roll", &roll, -180.f, 180.f);

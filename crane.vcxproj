@@ -14,6 +14,7 @@
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\gl_core_3_2.cpp" />
     <ClCompile Include="src\imgui_sdl2.cpp" />
+    <ClCompile Include="src\lodepng.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\resource\model\Model.cpp" />
     <ClCompile Include="src\resource\model\Tokenizer.cpp" />

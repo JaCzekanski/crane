@@ -79,7 +79,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resource\model\Tokenizer.cpp">
-      <Filter>Source Files\resource\model</Filter>
+      <Filter>Source Files\resource\model</Filter>    
+    </ClCompile>
+    <ClCompile Include="src\lodepng.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

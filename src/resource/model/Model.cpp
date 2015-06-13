@@ -74,6 +74,7 @@ bool Model::load()
 				if (t.type != Token::Type::Float) error("float");
 				vt[i] = t.f;
 			}
+			vt[1] = -vt[1];
 			coords.push_back(vt);
 			tokenizer.nextLine();
 		}
@@ -136,6 +137,7 @@ bool Model::load()
 				}
 				mv.position = vertices[v[i] - 1];
 				if (normal) mv.normal = normals[vn[i] - 1];
+				if (texcoord) mv.texcoord = coords[vt[i] - 1];
 				data.push_back(mv);
 			}
 		}

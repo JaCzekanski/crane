@@ -84,8 +84,8 @@ GLuint vao;
 
 int currentModel = 0;
 const char* models[] = {
-	"bunny",
-	"cube"
+	"cube",
+	"bunny"
 };
 std::string modelName = models[currentModel];
 std::vector<glm::vec3> meshPositions;
@@ -113,11 +113,19 @@ void Game::Run()
 	//	return;
 	//}
 
+	if (!resourceManager.loadTexture("bunny"))
+	{
+		logger.Fatal("%s", "Cannot load texture");
+		return;
+	}
+	resourceManager.getTexture("bunny")->use();
+
 	resourceManager.getModel(modelName)->use();
 
 	auto program = resourceManager.getProgram("normal");
 	gl::EnableVertexAttribArray(program->getAttrib("position"));
 	gl::EnableVertexAttribArray(program->getAttrib("normal"));
+	gl::EnableVertexAttribArray(program->getAttrib("texcoord"));
 
 	cameraPosition = glm::vec3(0.0f, 0.0f, 10.0f);
 	cameraDirection = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -238,8 +246,8 @@ void Game::Render()
 	gl::Enable(gl::DEPTH_TEST);
 	gl::Enable(gl::BLEND);
 	gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-	gl::Disable(gl::CULL_FACE);
-	gl::CullFace(gl::BACK);
+	//gl::Disable(gl::CULL_FACE);
+	//gl::CullFace(gl::BACK);
 	gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
 
 	gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
@@ -257,6 +265,7 @@ void Game::Render()
 
 	gl::VertexAttribPointer(program->getAttrib("position"), 3, gl::FLOAT, false, sizeof(modelVertice), 0);
 	gl::VertexAttribPointer(program->getAttrib("normal"), 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
+	gl::VertexAttribPointer(program->getAttrib("texcoord"), 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
 
 	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 10000.0f);
 
@@ -274,6 +283,7 @@ void Game::Render()
 	gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
 	gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	gl::Uniform1i(program->getUniform("texture"), 0);
 
 	int verticeCount = 0;
 	for (int i = 0; i < meshCount; i++)
@@ -284,6 +294,7 @@ void Game::Render()
 		model = glm::rotate(model, yaw,   glm::vec3(0, 1, 0));
 		model = glm::rotate(model, roll,  glm::vec3(0, 0, 1));
 
+		gl::BindTexture(gl::TEXTURE_2D, resourceManager.getTexture("bunny")->get());
 		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
 		gl::DrawArrays(gl::TRIANGLES, 0, mesh->getSize());
 		verticeCount += mesh->getSize();

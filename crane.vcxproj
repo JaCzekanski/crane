@@ -16,6 +16,7 @@
     <ClCompile Include="src\imgui_sdl2.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\resource\model\Model.cpp" />
+    <ClCompile Include="src\resource\model\Tokenizer.cpp" />
     <ClCompile Include="src\resource\Resource.cpp" />
     <ClCompile Include="src\resource\ResourceManager.cpp" />
     <ClCompile Include="src\resource\shader\Program.cpp" />
@@ -29,6 +30,8 @@
     <ClInclude Include="src\imgui_sdl2.h" />
     <ClInclude Include="src\Logger.h" />
     <ClInclude Include="src\resource\model\Model.h" />
+    <ClInclude Include="src\resource\model\Token.h" />
+    <ClInclude Include="src\resource\model\Tokenizer.h" />
     <ClInclude Include="src\resource\Resource.h" />
     <ClInclude Include="src\resource\ResourceManager.h" />
     <ClInclude Include="src\resource\shader\Program.h" />

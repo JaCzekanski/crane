@@ -78,6 +78,9 @@
     <ClCompile Include="src\imgui_sdl2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resource\model\Tokenizer.cpp">
+      <Filter>Source Files\resource\model</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Game.h">
@@ -112,6 +115,12 @@
     </ClInclude>
     <ClInclude Include="src\imgui_sdl2.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\model\Tokenizer.h">
+      <Filter>Header Files\resource\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource\model\Token.h">
+      <Filter>Header Files\resource\model</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

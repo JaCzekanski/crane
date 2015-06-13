@@ -5,6 +5,7 @@
 #include "texture/Texture.h"
 #include "shader\Program.h"
 #include "model\Model.h"
+#include "../Logger.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -30,14 +31,26 @@ public:
 	std::shared_ptr<Program> getProgram(const std::string& id)
 	{
 		auto p = programs.find(id);
-		if (p == programs.end()) return std::shared_ptr<Program>();
+		if (p == programs.end()) {
+			if (!loadProgram(id)) {
+				logger.Fatal("Cannot load program %s", id.c_str());
+				return std::shared_ptr<Program>();
+			}
+			return programs.find(id)->second;
+		}
 		return p->second;
 	}
 
 	std::shared_ptr<Model> getModel(const std::string& id)
 	{
 		auto p = models.find(id);
-		if (p == models.end()) return std::shared_ptr<Model>();
+		if (p == models.end()) {
+			if (!loadModel(id)) {
+				logger.Fatal("Cannot load model %s", id.c_str());
+				return std::shared_ptr<Model>();
+			}
+			return models.find(id)->second;
+		}
 		return p->second;
 	}
 

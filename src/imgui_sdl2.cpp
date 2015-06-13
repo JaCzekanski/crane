@@ -314,7 +314,7 @@ void ImGui_SDL2_NewFrame()
     io.DisplaySize = ImVec2((float)w, (float)h);
 
     // Setup time step
-    double current_time =  SDL_GetTicks();
+    double current_time =  SDL_GetTicks()/1000.0;
     io.DeltaTime = g_Time > 0.0 ? (float)(current_time - g_Time) : (float)(1.0f/60.0f);
     g_Time = current_time;
 

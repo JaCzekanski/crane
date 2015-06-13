@@ -9,7 +9,7 @@
 #include <ctime>
 #include <deque>
 #include <string>
-
+#include <SDL.h>
 /*
 Logger::Open( const char* file );
 Logger::Info( const char* format, ... );

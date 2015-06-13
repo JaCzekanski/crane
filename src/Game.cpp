@@ -82,14 +82,10 @@ float pitch = 0, yaw = 0, roll = 0;
 float pos_x = 0;
 GLuint vao;
 
-int currentModel = 1;
+int currentModel = 0;
 const char* models[] = {
-	"knot",
-	"dragon",
-	"monkey",
 	"bunny",
-	"horse",
-	"crane"
+	"cube"
 };
 std::string modelName = models[currentModel];
 std::vector<glm::vec3> meshPositions;
@@ -102,20 +98,20 @@ void Game::Run()
 	gl::GenVertexArrays(1, &vao);
 	gl::BindVertexArray(vao);
 
-	for (std::string m : models)
-	{
-		if (!resourceManager.loadModel(m))
-		{
-			logger.Fatal("%s", "Cannot load model");
-			return;
-		}
-	}
+	//for (std::string m : models)
+	//{
+	//	if (!resourceManager.loadModel(m))
+	//	{
+	//		logger.Fatal("%s", "Cannot load model");
+	//		return;
+	//	}
+	//}
 
-	if (!resourceManager.loadProgram("normal"))
-	{
-		logger.Fatal("%s", "Cannot load program");
-		return;
-	}
+	//if (!resourceManager.loadProgram("normal"))
+	//{
+	//	logger.Fatal("%s", "Cannot load program");
+	//	return;
+	//}
 
 	resourceManager.getModel(modelName)->use();
 
@@ -295,7 +291,7 @@ void Game::Render()
 
 	ImGui::Text("Object");
 	ImGui::Text("Vertices: %d", verticeCount);
-	if (ImGui::Combo("Model", &currentModel, models, 6)) modelName = std::string(models[currentModel]);
+	if (ImGui::Combo("Model", &currentModel, models, 2)) modelName = std::string(models[currentModel]);
 	ImGui::SliderAngle("Pitch", &pitch, -180.f, 180.f);
 	ImGui::SliderAngle("Yaw", &yaw, -180.f, 180.f);
 	ImGui::SliderAngle("Roll", &roll, -180.f, 180.f);
@@ -312,7 +308,7 @@ void Game::Render()
 	if (ImGui::Button("Fatal")) logger.Fatal("Button");
 
 	bool popup = false;
-	ImGui::BeginPopup(&popup);
+	ImGui::Begin("Console", &popup);
 	for (auto m : logger.getMessages()) {
 		ImVec4 colors[] = {
 			{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
@@ -324,7 +320,7 @@ void Game::Render()
 
 		ImGui::TextColored(colors[m.type], m.message.c_str());
 	}
-	ImGui::EndPopup();
+	ImGui::End();
 
 	ImGui::Render();
 	SDL_GL_SwapWindow(mainWindow);

@@ -78,14 +78,6 @@ Game::~Game()
 	SDL_Quit();
 }
 
-int currentModel = 0;
-const char* models[] = {
-	"cube",
-	"bunny"
-};
-int modelCount = 2;
-btDiscreteDynamicsWorld* dynamicsWorld;
-
 void Game::Run() 
 {
 	if (!initialized) return;
@@ -287,16 +279,12 @@ void Game::Step(float dt)
 	lightPosition = glm::vec3(20 * cos(lightAngle), 0.0, 20 * sin(lightAngle));
 }
 
-bool wireframe;
-float fov = glm::radians(60.f);
-
 void Game::Render()
 {
 	gl::Enable(gl::DEPTH_TEST);
 	gl::Enable(gl::BLEND);
 	gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-	gl::Enable(gl::CULL_FACE);
-	gl::CullFace(gl::FRONT);
+	gl::Disable(gl::CULL_FACE);
 	gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
 
 	gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
@@ -324,7 +312,7 @@ void Game::Render()
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
 	gl::Uniform1i(program->getUniform("texture"), 0);
 
-	resourceManager.getTexture(models[currentModel])->use();
+	resourceManager.getTexture("cube")->use();
 	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
 	{
 		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
@@ -339,7 +327,7 @@ void Game::Render()
 		model = model * glm::mat4_cast(rotation);
 
 		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		resourceManager.getModel(models[currentModel])->render();
+		resourceManager.getModel("cube")->render();
 	}
 
 	glm::mat4 model = glm::mat4(1.0);
@@ -361,18 +349,14 @@ void Game::drawGUI()
 	ImGui_SDL2_NewFrame();
 	ImGui::Text("Info");
 	ImGui::Text("FPS: %d", (int)FPS);
-	ImGui::Text("Object");
-	ImGui::Combo("Model", &currentModel, models, modelCount);
 
 	ImGui::Text("Options");
+	ImGui::Checkbox("Console", &consoleEnabled);
 	ImGui::Checkbox("Wireframe mode", &wireframe);
 	ImGui::SliderAngle("FOV", &fov, 45, 120);
 
 	ImGui::Text("Physics");
 	ImGui::Checkbox("Pause", &physicsPaused);
-
-	ImGui::Text("Other");
-	ImGui::Checkbox("Console", &consoleEnabled);
 
 	if (consoleEnabled) {
 		ImGui::Begin("Console");
@@ -380,7 +364,7 @@ void Game::drawGUI()
 			ImVec4 colors[] = {
 				{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
 				{ 0.0f, 1.0f, 0.0f, 1.0f }, //LOG_SUCCESS = 1,
-				{ 0.7f, 0.3f, 0.3f, 1.0f }, //LOG_ERROR = 2,
+				{ 1.0f, 0.0f, 0.0f, 1.0f }, //LOG_ERROR = 2,
 				{ 1.0f, 0.0f, 0.0f, 1.0f }, //LOG_FATAL = 3,
 				{ 1.0f, 1.0f, 0.0f, 1.0f }, //LOG_DEBUG = 4
 			};

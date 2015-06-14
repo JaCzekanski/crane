@@ -36,16 +36,19 @@ bool Texture::load()
 
 	gl::GenerateMipmap(gl::TEXTURE_2D);
 
+	initialized = true;
 	return true;
 }
 
 GLuint Texture::get()
 {
+	if (!initialized) return 0;
 	return tex;
 }
 
 bool Texture::use()
 {
+	if (!initialized) return false;
 	gl::BindTexture(gl::TEXTURE_2D, tex);
 	return true;
 }

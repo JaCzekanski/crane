@@ -11,9 +11,10 @@
 class Texture
 {
 	std::string name;
-	GLuint tex;
+	GLuint tex = 0;
 	unsigned int width;
 	unsigned int height;
+	bool initialized;
 public:
 	fileInfo info;
 	std::string filename;

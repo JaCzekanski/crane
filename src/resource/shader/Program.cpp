@@ -42,6 +42,7 @@ bool Program::load()
 
 	shaders = std::move(newShaders);
 	programId = id;
+	initialized = true;
 	return true;
 }
 
@@ -90,6 +91,7 @@ std::string Program::getError()
 
 bool Program::use()
 {
+	if (!initialized) return false;
 	if (programId == 0)
 	{
 		error = std::string("Program not linked.");
@@ -101,10 +103,12 @@ bool Program::use()
 
 GLint Program::getAttrib(const GLchar *name)
 {
+	if (!initialized) return 0;
 	return gl::GetAttribLocation(programId, name);
 }
 
 GLint Program::getUniform(const GLchar *name)
 {
+	if (!initialized) return 0;
 	return gl::GetUniformLocation(programId, name);
 }

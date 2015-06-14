@@ -31,7 +31,6 @@ bool ResourceManager::loadProgram(std::string name)
 		programs.emplace(name, program);
 		return true;
 	}
-	logger.Error("%s", program->getError().c_str());
 	return false;
 }
 
@@ -43,7 +42,6 @@ bool ResourceManager::loadModel(std::string name)
 		models.emplace(name, model);
 		return true;
 	}
-	logger.Error("Cannot load %s", name.c_str());
 	return false;
 }
 
@@ -55,7 +53,6 @@ bool ResourceManager::loadTexture(std::string name)
 		textures.emplace(name, texture);
 		return true;
 	}
-	logger.Error("Cannot load %s", name.c_str());
 	return false;
 }
 

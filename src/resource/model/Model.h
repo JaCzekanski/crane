@@ -22,6 +22,7 @@ class Model
 	GLuint vbo; // Buffer
 	GLuint vao; // Metadata 
 	int size;
+	bool initialized;
 public:
 	fileInfo info;
 	Model(std::string name);

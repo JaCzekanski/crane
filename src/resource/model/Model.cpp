@@ -167,6 +167,7 @@ bool Model::load()
 
 	// TODO: No buffers deallocation!!!
 	size = data.size();
+	initialized = true;
 	return true;
 }
 
@@ -177,12 +178,16 @@ GLuint Model::get()
 
 bool Model::use()
 {
+	if (!initialized) return false;
+	
 	gl::BindVertexArray(vao);
 	return true;
 }
 
 bool Model::render()
 {
+	if (!initialized) return false;
+
 	use();
 	gl::DrawArrays(gl::TRIANGLES, 0, getSize());
 	return true;

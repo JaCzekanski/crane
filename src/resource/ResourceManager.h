@@ -36,8 +36,9 @@ public:
 		auto p = programs.find(id);
 		if (p == programs.end()) {
 			if (!loadProgram(id)) {
-				logger.Fatal("Cannot load program %s", id.c_str());
-				return std::shared_ptr<Program>();
+				logger.Error("Cannot load program %s", id.c_str());
+				programs.emplace(id, std::shared_ptr<Program>(new Program("")));
+				return programs.find(id)->second; // Return null program
 			}
 			logger.Success("Program %s loaded", id.c_str());
 			return programs.find(id)->second;
@@ -50,8 +51,9 @@ public:
 		auto p = models.find(id);
 		if (p == models.end()) {
 			if (!loadModel(id)) {
-				logger.Fatal("Cannot load model %s", id.c_str());
-				return std::shared_ptr<Model>();
+				logger.Error("Cannot load model %s", id.c_str());
+				models.emplace(id, std::shared_ptr<Model>(new Model("")));
+				return models.find(id)->second; // Return null model
 			}
 			logger.Success("Model %s loaded", id.c_str());
 			return models.find(id)->second;
@@ -65,8 +67,9 @@ public:
 		if (p == textures.end()) {
 
 			if (!loadTexture(id)) {
-				logger.Fatal("Cannot load texture %s", id.c_str());
-				return std::shared_ptr<Texture>();
+				logger.Error("Cannot load texture %s", id.c_str());
+				textures.emplace(id, std::shared_ptr<Texture>(new Texture("")));
+				return textures.find(id)->second; // Return null texture (shouldn't crash program)
 			}
 			logger.Success("Texture %s loaded", id.c_str());
 			return textures.find(id)->second;

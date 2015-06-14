@@ -102,7 +102,7 @@ private:
 		m.type = (LogType)type;
 		m.message = std::string(bigbuffer);
 		messages.push_back(m);
-		if (messages.size() > 6) messages.pop_front();
+		if (messages.size() > 10) messages.pop_front();
 		//OutputDebugString(bigbuffer);
 	}
 	void Open(const char* filename)

@@ -17,6 +17,7 @@ class Program
 
 	void destroy();
 	GLuint link(std::vector<Shader> &shaders);
+	bool initialized;
 public:
 	std::vector<fileInfo> info;
 	Program(std::string name);

@@ -44,8 +44,11 @@ private:
 
 	// Physics
 	bool physicsPaused = true;
+	btDiscreteDynamicsWorld* dynamicsWorld;
 
 	// Temporary
+	bool wireframe;
+	float fov = glm::radians(60.f);
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;
 	float cameraPitch, cameraYaw = -3.9;
 	glm::vec3 lightPosition;

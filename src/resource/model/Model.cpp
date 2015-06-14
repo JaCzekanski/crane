@@ -154,9 +154,8 @@ bool Model::load()
 	gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
 	gl::BufferData(gl::ARRAY_BUFFER, data.size()*sizeof(modelVertice), &data[0], gl::STATIC_DRAW);
 
-	// TODO: Hardcoded attribute ids! Propably will crash on another pc!!!
-	gl::VertexAttribPointer(1, 3, gl::FLOAT, false, sizeof(modelVertice), 0);
-	gl::VertexAttribPointer(0, 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
+	gl::VertexAttribPointer(0, 3, gl::FLOAT, false, sizeof(modelVertice), 0);
+	gl::VertexAttribPointer(1, 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
 	gl::VertexAttribPointer(2, 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
 
 	gl::EnableVertexAttribArray(0);

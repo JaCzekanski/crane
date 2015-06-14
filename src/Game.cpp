@@ -256,6 +256,7 @@ void Game::Input(float dt)
 	const Uint8* keys = SDL_GetKeyboardState(NULL);
 
 	if (keys[SDL_SCANCODE_LSHIFT]) speed = 10.f;
+	if (keys[SDL_SCANCODE_LCTRL]) speed = 100.f;
 
 	if (keys[SDL_SCANCODE_W])
 		cameraPosition += cameraDirection * dt * speed;
@@ -294,7 +295,7 @@ void Game::Render()
 	auto program = resourceManager.getProgram("normal");
 	program->use();
 
-	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 1000.0f);
 
 	cameraDirection = glm::vec3(
 		cos(cameraPitch) * sin(cameraYaw),

@@ -26,6 +26,12 @@ bool Model::load()
 	auto buf = getFileContentsAsString(filename);
 	if (buf.empty()) return false;
 
+	bool texcoord = false;
+	bool normal = false;
+
+	std::vector<modelVertice> data;
+	std::string objectName = "default";
+	std::string materialName = "";
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> coords;
@@ -80,8 +86,6 @@ bool Model::load()
 		else if (t.s == "f")
 		{
 			int v[3], vt[3], vn[3];
-			bool texcoord = false;
-			bool normal = false;
 			bool load = true;
 			for (int i = 0; i < 3; i++)
 			{
@@ -140,19 +144,51 @@ bool Model::load()
 				data.push_back(mv);
 			}
 		}
+		else if (t.s == "mtllib")
+		{
+			t = tokenizer.getToken();
+			materialFile = t.s;
+
+			materials = parseMaterialFile( getPath(filename) + materialFile);
+			// Parse material file
+		}
+		else if (t.s == "usemtl")
+		{
+			t = tokenizer.getToken();
+			materialName = t.s;
+		}
+		else if (t.s == "o")
+		{
+			if (!data.empty()) commit(objectName, materialName, data);// commit current changes
+			t = tokenizer.getToken();
+			objectName = t.s;
+		}
 		else tokenizer.nextLine();
 		
 	}
+	if (!data.empty()) commit(objectName, materialName, data);
 	vertices.clear();
 	normals.clear();
 	coords.clear();
 
-	gl::GenVertexArrays(1, &vao);
-	gl::BindVertexArray(vao);
+	initialized = true;
+	return true;
+}
 
-	gl::GenBuffers(1, &vbo);
-	gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-	gl::BufferData(gl::ARRAY_BUFFER, data.size()*sizeof(modelVertice), &data[0], gl::STATIC_DRAW);
+void Model::commit(std::string objectName, std::string materialName, std::vector<modelVertice> &data)
+{
+	std::shared_ptr<ModelObject> object(new ModelObject());
+
+	object->data = data;
+	if (materials.find(materialName) != materials.end()) object->material = materials.find(materialName)->second;
+	object->size = data.size();
+
+	gl::GenVertexArrays(1, &object->vao);
+	gl::BindVertexArray(object->vao);
+
+	gl::GenBuffers(1, &object->vbo);
+	gl::BindBuffer(gl::ARRAY_BUFFER, object->vbo);
+	gl::BufferData(gl::ARRAY_BUFFER, object->data.size()*sizeof(modelVertice), &object->data[0], gl::STATIC_DRAW);
 
 	gl::VertexAttribPointer(0, 3, gl::FLOAT, false, sizeof(modelVertice), 0);
 	gl::VertexAttribPointer(1, 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
@@ -164,30 +200,91 @@ bool Model::load()
 
 	gl::BindVertexArray(0);
 
+	objects.emplace(objectName, object);
+
+	data.clear();
 	// TODO: No buffers deallocation!!!
-	size = data.size();
-	initialized = true;
-	return true;
 }
 
-GLuint Model::get()
+#undef error
+#define error(x) { logger.Error("%s: Invalid token at line %d position %d, %s expected", filename.c_str(), tokenizer.getLine(), tokenizer.getPosition(), (x)); return materials;}
+std::unordered_map<std::string, Material> Model::parseMaterialFile(std::string filename)
 {
-	return vbo;
-}
+	std::unordered_map<std::string, Material> materials;
+	Material material;
 
-bool Model::use()
-{
-	if (!initialized) return false;
-	
-	gl::BindVertexArray(vao);
-	return true;
+	auto buf = getFileContentsAsString(filename);
+	if (buf.empty()) return materials;
+
+	std::string materialName;
+	Tokenizer tokenizer(buf);
+
+	while (tokenizer.tokenAvailable())
+	{
+		Token t = tokenizer.getToken();
+		if (t.type == Token::Type::Empty) continue;
+		if (t.type != Token::Type::String) error("string");
+
+		if (t.s == "newmtl")
+		{
+			if (!materialName.empty()) materials.emplace(materialName, material);// Commit
+
+			t = tokenizer.getToken();
+			materialName = t.s;
+
+			material = Material();
+		}
+		else if (t.s == "Ka")
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				t = tokenizer.getToken();
+				if (t.type != Token::Type::Float) error("float");
+				if (t.f < 0.3) t.f = 0.3;
+				material.ambient[i] = t.f;
+			}
+			tokenizer.nextLine();
+		}
+		else if (t.s == "Kd")
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				t = tokenizer.getToken();
+				if (t.type != Token::Type::Float) error("float");
+				material.diffuse[i] = t.f;
+			}
+			tokenizer.nextLine();
+		}
+		else if (t.s == "Ks")
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				t = tokenizer.getToken();
+				if (t.type != Token::Type::Float) error("float");
+				material.specular[i] = t.f;
+			}
+			tokenizer.nextLine();
+		}
+		// Ni, d, illum
+		else if (t.s == "map_Kd")
+		{
+			t = tokenizer.getToken();
+			material.texture = getFilename(t.s);
+		}
+		else tokenizer.nextLine();
+
+	}
+	if (!materialName.empty()) materials.emplace(materialName, material);// Commit
+
+	return materials;
 }
 
 bool Model::render()
 {
 	if (!initialized) return false;
 
-	use();
-	gl::DrawArrays(gl::TRIANGLES, 0, getSize());
+	for (auto obj : objects) {
+		obj.second->render();
+	}
 	return true;
 }

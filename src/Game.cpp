@@ -157,7 +157,7 @@ void Game::Run()
 		btVector3 localInertia(0, 0, 0);
 		if (isDynamic) shape->calculateLocalInertia(mass, localInertia);
 
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 50; i++)
 		{
 			if (i == 0)
 				startTransform.setOrigin(btVector3(0., 50.0, 0.));
@@ -168,7 +168,7 @@ void Game::Run()
 			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
 			btRigidBody* body = new btRigidBody(rbInfo);
 			body->setCenterOfMassTransform(startTransform);
-			body->setRestitution(1.0);
+			body->setRestitution(0.75);
 
 			dynamicsWorld->addRigidBody(body);
 		}
@@ -277,7 +277,8 @@ void Game::Input(float dt)
 void Game::Step(float dt)
 {
 	if (!physicsPaused) dynamicsWorld->stepSimulation(dt);
-	lightPosition = glm::vec3(20 * cos(lightAngle), 0.0, 20 * sin(lightAngle));
+	lightPosition = glm::vec3(100 * cos(lightAngle), 20.0, 100 * sin(lightAngle));
+	lightAngle += dt *0.5;
 }
 
 void Game::Render()
@@ -311,9 +312,12 @@ void Game::Render()
 	gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
 	gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
+	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(ambient));
+	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
 	gl::Uniform1i(program->getUniform("texture"), 0);
 
-	resourceManager.getTexture("cube")->use();
+	resourceManager.getTexture("bunny")->use();
 	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
 	{
 		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
@@ -328,17 +332,35 @@ void Game::Render()
 		model = model * glm::mat4_cast(rotation);
 
 		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		resourceManager.getModel("cube")->render();
+		resourceManager.getModel("bunny")->render();
 	}
 
 	glm::mat4 model = glm::mat4(1.0);
+	
 	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-
 	resourceManager.getTexture("terrain")->use();
-	resourceManager.getModel("terrain")->render();
+	resourceManager.getModel(terrainModel)->render();
 
 	resourceManager.getTexture("skybox")->use();
 	resourceManager.getModel("skybox")->render();
+	
+	
+	model = glm::mat4(1.0);
+	model = glm::translate(model, cranePosition);
+	model = glm::scale(model, glm::vec3(5.f, 5.f, 5.f));
+	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
+	for (auto obj : resourceManager.getModel("crane")->objects)
+	{
+		if (!obj.second->material.texture.empty())
+			resourceManager.getTexture(obj.second->material.texture)->use();
+
+		gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
+		gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
+		gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
+
+		obj.second->render();
+	}
 
 	drawGUI();
 	SDL_GL_SwapWindow(mainWindow);
@@ -347,6 +369,7 @@ void Game::Render()
 void Game::drawGUI()
 {
 	static bool consoleEnabled = true;
+	static bool simpleTerrain = true;
 	ImGui_SDL2_NewFrame();
 	ImGui::Text("Info");
 	ImGui::Text("FPS: %d", (int)FPS);
@@ -355,6 +378,12 @@ void Game::drawGUI()
 	ImGui::Checkbox("Console", &consoleEnabled);
 	ImGui::Checkbox("Wireframe mode", &wireframe);
 	ImGui::SliderAngle("FOV", &fov, 45, 120);
+
+	if (ImGui::Checkbox("Simple terrain", &simpleTerrain))
+	{
+		if (simpleTerrain) terrainModel = "simple_terrain";
+		else terrainModel = "terrain";
+	}
 
 	ImGui::Text("Physics");
 	ImGui::Checkbox("Pause", &physicsPaused);

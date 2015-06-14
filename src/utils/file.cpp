@@ -2,6 +2,16 @@
 
 using namespace std;
 
+std::string getPath(std::string name)
+{
+	int begin = 0, end = name.length() - 1;
+
+	std::size_t slash = name.find_last_of("/\\");
+	if (slash != std::string::npos) end = slash + 1;
+
+	return name.substr(begin, end - begin);
+}
+
 std::string getFilename(std::string name)
 {
 	int begin = 0, end = name.length() - 1;

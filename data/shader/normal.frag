@@ -10,10 +10,12 @@ uniform mat4 proj;
 uniform vec3 lightPosition;
 uniform vec3 cameraPosition;
 
+uniform vec3 diffuse = vec3( 0.75, 0.75, 0.75 );
+uniform vec3 ambient = vec3( 0.75, 0.75, 0.75 );
+uniform vec3 specular = vec3( 0.0, 0.0, 0.0 );
+
 uniform sampler2D texture;
 
-const vec3 diffuseColor = vec3( 0.75, 0.75, 0.75 );
-const vec3 ambientColor = vec3( 1.0, 1.0, 1.0 );
 
 void main()
 {
@@ -26,7 +28,7 @@ void main()
 	float brightness =  dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
 	brightness = clamp(brightness, 0, 1);
 
-	vec3 color = brightness * diffuseColor + ambientColor;
+	vec3 color = brightness * diffuse + ambient;
 
 	gl_FragColor =  texture2D(texture, fragCoord) * vec4( color, 1.0 );
 }

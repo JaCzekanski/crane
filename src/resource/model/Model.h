@@ -7,7 +7,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "../Resource.h"
-
+#include <unordered_map>
+#include <memory>
 
 struct modelVertice
 {
@@ -16,26 +17,56 @@ struct modelVertice
 	glm::vec2 texcoord;
 };
 
-class Model
+struct Material
 {
-	std::string name;
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+	std::string texture;
+};
+
+struct ModelObject
+{
 	GLuint vbo; // Buffer
 	GLuint vao; // Metadata 
 	int size;
+	std::vector<modelVertice> data;
+	Material material;
+
+	bool use()
+	{
+		gl::BindVertexArray(vao);
+		return true;
+	}
+
+	bool render()
+	{
+		use();
+		gl::DrawArrays(gl::TRIANGLES, 0, size);
+		return true;
+	}
+};
+
+class Model
+{
+	std::string name;
 	bool initialized;
+
+	std::unordered_map<std::string, Material> materials;
+	std::string materialFile;
+
+	void commit(std::string objectName, std::string materialName, std::vector<modelVertice> &data);
+
+	std::unordered_map<std::string, Material> parseMaterialFile(std::string filename);
 public:
 	fileInfo info;
+	std::unordered_map<std::string, std::shared_ptr<ModelObject>> objects;
+
 	Model(std::string name);
 	~Model();
 
-	std::vector<modelVertice> data;
-
 	std::string getName() { return name; }
-	int getSize() { return size; }
 
 	bool load();
-
-	GLuint get();
-	bool use();
 	bool render();
 };

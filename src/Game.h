@@ -42,11 +42,17 @@ private:
 
 	float FPS = 0;
 
+	// Light
+	glm::vec3 diffuse = glm::vec3(0.75, 0.75, 0.75);
+	glm::vec3 ambient = glm::vec3(0.75, 0.75, 0.75);
+	glm::vec3 specular = glm::vec3(0.0, 0.0, 0.0);
+
 	// Physics
 	bool physicsPaused = true;
 	btDiscreteDynamicsWorld* dynamicsWorld;
 
 	// Temporary
+	std::string terrainModel = "simple_terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;
@@ -54,8 +60,7 @@ private:
 	glm::vec3 lightPosition;
 	float lightAngle;
 
-	GLuint vao;
-
+	glm::vec3 cranePosition = glm::vec3(15.f, 0.f, -15.f);
 
 	void Input(float dt);
 	void Step(float dt);

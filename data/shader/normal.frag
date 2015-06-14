@@ -12,9 +12,8 @@ uniform vec3 cameraPosition;
 
 uniform sampler2D texture;
 
-const vec3 diffuseColor = vec3( 0.5, 0.5, 0.5 );
-const vec3 diffuse_Color = vec3( 0.2, 0.2, 0.2 );
-const vec3 ambientColor = vec3( 0.3, 0.3, 0.3 );
+const vec3 diffuseColor = vec3( 0.75, 0.75, 0.75 );
+const vec3 ambientColor = vec3( 1.0, 1.0, 1.0 );
 
 void main()
 {
@@ -27,12 +26,7 @@ void main()
 	float brightness =  dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
 	brightness = clamp(brightness, 0, 1);
 
-	vec3 surfaceToLight_ = cameraPosition - fragPosition;
-	float brightness_ = dot(normal, surfaceToLight_) / (length(surfaceToLight_) * length(normal));
-	brightness_ = clamp(brightness_, 0, 1);
-
-
-	vec3 color = brightness * diffuseColor + brightness_ * diffuse_Color + ambientColor;
+	vec3 color = brightness * diffuseColor + ambientColor;
 
 	gl_FragColor =  texture2D(texture, fragCoord) * vec4( color, 1.0 );
 }

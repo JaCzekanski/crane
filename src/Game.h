@@ -9,6 +9,7 @@
 
 #include "Logger.h"
 #include "resource/ResourceManager.h"
+#include <btBulletDynamicsCommon.h>
 
 namespace State
 {
@@ -39,10 +40,14 @@ private:
 	State::State gameState = State::Menu;
 	bool initialized = false;
 
+	float FPS = 0;
+
+	// Physics
+	bool physicsPaused = true;
 
 	// Temporary
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;
-	float cameraPitch, cameraYaw;
+	float cameraPitch, cameraYaw = -3.9;
 	glm::vec3 lightPosition;
 	float lightAngle;
 

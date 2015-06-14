@@ -14,7 +14,7 @@ Model::~Model()
 {
 }
 
-#define error(x) { logger.Error("%s: Invalid token, %s expected", filename.c_str(), (x)); return false;}
+#define error(x) { logger.Error("%s: Invalid token at line %d position %d, %s expected", filename.c_str(), tokenizer.getLine(), tokenizer.getPosition(), (x)); return false;}
 
 bool Model::load()
 {
@@ -29,7 +29,6 @@ bool Model::load()
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> coords;
-	std::vector<modelVertice> data;
 	Tokenizer tokenizer(buf);
 
 	while (tokenizer.tokenAvailable())
@@ -147,9 +146,26 @@ bool Model::load()
 	vertices.clear();
 	normals.clear();
 	coords.clear();
+
+	gl::GenVertexArrays(1, &vao);
+	gl::BindVertexArray(vao);
+
 	gl::GenBuffers(1, &vbo);
 	gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
 	gl::BufferData(gl::ARRAY_BUFFER, data.size()*sizeof(modelVertice), &data[0], gl::STATIC_DRAW);
+
+	// TODO: Hardcoded attribute ids! Propably will crash on another pc!!!
+	gl::VertexAttribPointer(1, 3, gl::FLOAT, false, sizeof(modelVertice), 0);
+	gl::VertexAttribPointer(0, 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
+	gl::VertexAttribPointer(2, 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
+
+	gl::EnableVertexAttribArray(0);
+	gl::EnableVertexAttribArray(1);
+	gl::EnableVertexAttribArray(2);
+
+	gl::BindVertexArray(0);
+
+	// TODO: No buffers deallocation!!!
 	size = data.size();
 	return true;
 }
@@ -161,6 +177,13 @@ GLuint Model::get()
 
 bool Model::use()
 {
-	gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+	gl::BindVertexArray(vao);
+	return true;
+}
+
+bool Model::render()
+{
+	use();
+	gl::DrawArrays(gl::TRIANGLES, 0, getSize());
 	return true;
 }

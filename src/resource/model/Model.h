@@ -19,12 +19,15 @@ struct modelVertice
 class Model
 {
 	std::string name;
-	GLuint vbo;
+	GLuint vbo; // Buffer
+	GLuint vao; // Metadata 
 	int size;
 public:
 	fileInfo info;
 	Model(std::string name);
 	~Model();
+
+	std::vector<modelVertice> data;
 
 	std::string getName() { return name; }
 	int getSize() { return size; }
@@ -33,4 +36,5 @@ public:
 
 	GLuint get();
 	bool use();
+	bool render();
 };

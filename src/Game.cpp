@@ -84,21 +84,14 @@ const char* models[] = {
 	"bunny"
 };
 int modelCount = 2;
+btDiscreteDynamicsWorld* dynamicsWorld;
 
 void Game::Run() 
 {
 	if (!initialized) return;
 	SDL_ShowWindow(mainWindow);
 	
-	gl::GenVertexArrays(1, &vao);
-	gl::BindVertexArray(vao);
-	
-	auto program = resourceManager.getProgram("normal");
-	gl::EnableVertexAttribArray(program->getAttrib("position"));
-	gl::EnableVertexAttribArray(program->getAttrib("normal"));
-	gl::EnableVertexAttribArray(program->getAttrib("texcoord"));
-
-	cameraPosition = glm::vec3(0.0f, 0.0f, 10.0f);
+	cameraPosition = glm::vec3(0.0f, 15.0f, 45.0f);
 	cameraDirection = glm::vec3(0.0f, 0.0f, -1.0f);
 	cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -106,11 +99,99 @@ void Game::Run()
 
 	focusGained();
 
+	btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+	btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+	btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
+	btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+	dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+
+	dynamicsWorld->setGravity(btVector3(0, -10, 0));
+
+	btAlignedObjectArray<btCollisionShape*> collisionShapes;
+
+	{
+		btCollisionShape* ground = new btBoxShape(btVector3(btScalar(250.), btScalar(10.), btScalar(250.)));
+
+		collisionShapes.push_back(ground);
+
+		btTransform groundTransform;
+		groundTransform.setIdentity();
+		groundTransform.setOrigin(btVector3(0, -10.0, 0));
+		btScalar mass(0);
+
+		bool isDynamic = mass != 0.f;
+
+		btVector3 localInertia(0, 0, 0);
+		if (isDynamic) ground->calculateLocalInertia(mass, localInertia);
+
+		btDefaultMotionState* motionState = new btDefaultMotionState(groundTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, ground, localInertia);
+		btRigidBody* body = new btRigidBody(rbInfo);
+
+		dynamicsWorld->addRigidBody(body);
+	}
+
+	{
+		//btTriangleMesh *mesh = new btTriangleMesh();
+
+		//auto model = resourceManager.getModel("cube");
+		//for (auto it = model->data.begin(); it != model->data.end(); it+=3)
+		//{
+		//	glm::vec3 v_[3];
+		//	btVector3 v[3];
+		//	v_[0] = (*it).position;
+		//	v_[1] = (*(it+1)).position;
+		//	v_[2] = (*(it+2)).position;
+
+		//	for (int j = 0; j < 3; j++)
+		//	{
+		//		v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
+		//	}
+
+		//	mesh->addTriangle(v[0], v[1], v[2]);
+		//}		
+		//
+		//btCollisionShape* shape = new btBvhTriangleMeshShape(mesh, true);//new btBoxShape(btVector3(0.5, 1, 0.5));
+		btCollisionShape* shape = new btBoxShape(btVector3(0.5, 1, 0.5));
+		collisionShapes.push_back(shape);
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+
+		btScalar mass(1.f);
+
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0, 0, 0);
+		if (isDynamic) shape->calculateLocalInertia(mass, localInertia);
+
+		for (int i = 0; i < 100; i++)
+		{
+			if (i == 0)
+				startTransform.setOrigin(btVector3(0., 50.0, 0.));
+			else
+				startTransform.setOrigin(btVector3(cos((float)i)*5.0, 150.0 + i*7.0 / sqrt(i), sin((float)i)*5.0));
+			startTransform.setRotation(btQuaternion(btVector3(((rand() % 100) / 100.), ((rand() % 100) / 100.), ((rand() % 100) / 100.)), ((rand() % 100) / 100.)));
+			btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
+			btRigidBody* body = new btRigidBody(rbInfo);
+			body->setCenterOfMassTransform(startTransform);
+			body->setRestitution(1.0);
+
+			dynamicsWorld->addRigidBody(body);
+		}
+
+	}
+
+
 	float dt = 0.0f; // Czas od ostatniej klatki
 	float lastUpdate = ((float)SDL_GetTicks())/1000.0f; // Czas ostatniej aktualizacji
 
 	float accumulator = 0.0f;
-	const float TIME_STEP = 0.03f; // iloœæ aktualizacji fizyki na sekundê (tutaj 30 milisekund, czyli 30x na sekundê)
+	const float TIME_STEP = 1.f/60.f; // iloœæ aktualizacji fizyki na sekundê (tutaj 30 milisekund, czyli 30x na sekundê)
+
+	float frames = 0;
+	float fpsTime = 0;
 
 	while (gameState != State::Quit)
 	{
@@ -118,6 +199,15 @@ void Game::Run()
 		lastUpdate += dt;
 		dt = std::max(0.0f, dt);
 		accumulator += dt;
+
+		frames++;
+		fpsTime += dt;
+		if (fpsTime >= .25f)
+		{
+			FPS = frames / fpsTime;
+			frames = 0;
+			fpsTime = 0.f;
+		}
 
 		resourceManager.scanAndReload();
 		Input(dt);
@@ -193,6 +283,7 @@ void Game::Input(float dt)
 
 void Game::Step(float dt)
 {
+	if (!physicsPaused) dynamicsWorld->stepSimulation(dt);
 	lightPosition = glm::vec3(20 * cos(lightAngle), 0.0, 20 * sin(lightAngle));
 }
 
@@ -204,28 +295,17 @@ void Game::Render()
 	gl::Enable(gl::DEPTH_TEST);
 	gl::Enable(gl::BLEND);
 	gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-	//gl::Disable(gl::CULL_FACE);
-	//gl::CullFace(gl::BACK);
+	gl::Enable(gl::CULL_FACE);
+	gl::CullFace(gl::FRONT);
 	gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
 
 	gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
 	gl::ClearDepth(1.0f);
 	gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-	gl::BindVertexArray(vao);
-
 	auto program = resourceManager.getProgram("normal");
 	program->use();
 
-	auto texture = resourceManager.getTexture(models[currentModel]);
-	texture->use();
-
-	auto mesh = resourceManager.getModel(models[currentModel]);
-	mesh->use();
-
-	gl::VertexAttribPointer(program->getAttrib("position"), 3, gl::FLOAT, false, sizeof(modelVertice), 0);
-	gl::VertexAttribPointer(program->getAttrib("normal"), 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
-	gl::VertexAttribPointer(program->getAttrib("texcoord"), 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
 	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 10000.0f);
 
 	cameraDirection = glm::vec3(
@@ -244,10 +324,32 @@ void Game::Render()
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
 	gl::Uniform1i(program->getUniform("texture"), 0);
 
+	resourceManager.getTexture(models[currentModel])->use();
+	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
+	{
+		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
+		btRigidBody* body = btRigidBody::upcast(obj);
+
+		btTransform transform;
+		body->getMotionState()->getWorldTransform(transform);
+
+		glm::mat4 model = glm::mat4(1.0);
+		glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+		model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
+		model = model * glm::mat4_cast(rotation);
+
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getModel(models[currentModel])->render();
+	}
+
 	glm::mat4 model = glm::mat4(1.0);
 	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-	gl::DrawArrays(gl::TRIANGLES, 0, mesh->getSize());
 
+	resourceManager.getTexture("terrain")->use();
+	resourceManager.getModel("terrain")->render();
+
+	resourceManager.getTexture("skybox")->use();
+	resourceManager.getModel("skybox")->render();
 
 	drawGUI();
 	SDL_GL_SwapWindow(mainWindow);
@@ -255,7 +357,10 @@ void Game::Render()
 
 void Game::drawGUI()
 {
+	static bool consoleEnabled = true;
 	ImGui_SDL2_NewFrame();
+	ImGui::Text("Info");
+	ImGui::Text("FPS: %d", (int)FPS);
 	ImGui::Text("Object");
 	ImGui::Combo("Model", &currentModel, models, modelCount);
 
@@ -263,19 +368,27 @@ void Game::drawGUI()
 	ImGui::Checkbox("Wireframe mode", &wireframe);
 	ImGui::SliderAngle("FOV", &fov, 45, 120);
 
-	ImGui::Begin("Console");
-	for (auto m : logger.getMessages()) {
-		ImVec4 colors[] = {
-			{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
-			{ 0.0f, 1.0f, 0.0f, 1.0f }, //LOG_SUCCESS = 1,
-			{ 0.7f, 0.3f, 0.3f, 1.0f }, //LOG_ERROR = 2,
-			{ 1.0f, 0.0f, 0.0f, 1.0f }, //LOG_FATAL = 3,
-			{ 1.0f, 1.0f, 0.0f, 1.0f }, //LOG_DEBUG = 4
-		};
+	ImGui::Text("Physics");
+	ImGui::Checkbox("Pause", &physicsPaused);
 
-		ImGui::TextColored(colors[m.type], m.message.c_str());
+	ImGui::Text("Other");
+	ImGui::Checkbox("Console", &consoleEnabled);
+
+	if (consoleEnabled) {
+		ImGui::Begin("Console");
+		for (auto m : logger.getMessages()) {
+			ImVec4 colors[] = {
+				{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
+				{ 0.0f, 1.0f, 0.0f, 1.0f }, //LOG_SUCCESS = 1,
+				{ 0.7f, 0.3f, 0.3f, 1.0f }, //LOG_ERROR = 2,
+				{ 1.0f, 0.0f, 0.0f, 1.0f }, //LOG_FATAL = 3,
+				{ 1.0f, 1.0f, 0.0f, 1.0f }, //LOG_DEBUG = 4
+			};
+
+			ImGui::TextColored(colors[m.type], m.message.c_str());
+		}
+		ImGui::End();
 	}
-	ImGui::End();
 	ImGui::Render();
 }
 

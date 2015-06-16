@@ -56,11 +56,14 @@ private:
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;
-	float cameraPitch, cameraYaw = -3.9;
+	float cameraPitch, cameraYaw = -3.9f;
 	glm::vec3 lightPosition;
 	float lightAngle;
+	float timer;
 
-	glm::vec3 cranePosition = glm::vec3(15.f, 0.f, -15.f);
+	glm::vec3 cranePosition, craneDirection;
+	float craneVelocity, craneAcceleration;
+	float craneYaw;
 
 	void Input(float dt);
 	void Step(float dt);

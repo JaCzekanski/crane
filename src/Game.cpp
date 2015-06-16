@@ -78,16 +78,17 @@ Game::~Game()
 	SDL_Quit();
 }
 
+
 void Game::Run() 
 {
 	if (!initialized) return;
 	SDL_ShowWindow(mainWindow);
 	
-	cameraPosition = glm::vec3(0.0f, 15.0f, 45.0f);
+	cameraPosition = glm::vec3(0.0f, 5.0f, 15.0f);
 	cameraDirection = glm::vec3(0.0f, 0.0f, -1.0f);
 	cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	cameraYaw = M_PI;
+	cameraYaw = (float)M_PI;
 
 	focusGained();
 
@@ -162,8 +163,7 @@ void Game::Run()
 			if (i == 0)
 				startTransform.setOrigin(btVector3(0., 50.0, 0.));
 			else
-				startTransform.setOrigin(btVector3(cos((float)i)*5.0, 150.0 + i*7.0 / sqrt(i), sin((float)i)*5.0));
-			startTransform.setRotation(btQuaternion(btVector3(((rand() % 100) / 100.), ((rand() % 100) / 100.), ((rand() % 100) / 100.)), ((rand() % 100) / 100.)));
+				startTransform.setOrigin(btVector3(cos((float)i)*5.0f, 150.0f + i*7.0f / sqrt((float)i), sin((float)i)*5.0f));
 			btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
 			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
 			btRigidBody* body = new btRigidBody(rbInfo);
@@ -216,7 +216,7 @@ void Game::Run()
 
 void Game::Input(float dt)
 {
-	float speed = 20.f;
+	float speed = 10.f;
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
@@ -255,8 +255,8 @@ void Game::Input(float dt)
 	}
 	const Uint8* keys = SDL_GetKeyboardState(NULL);
 
-	if (keys[SDL_SCANCODE_LSHIFT]) speed = 10.f;
-	if (keys[SDL_SCANCODE_LCTRL]) speed = 100.f;
+	if (keys[SDL_SCANCODE_LSHIFT]) speed = 3.f;
+	if (keys[SDL_SCANCODE_LCTRL]) speed = 20.f;
 
 	if (keys[SDL_SCANCODE_W])
 		cameraPosition += cameraDirection * dt * speed;
@@ -271,6 +271,13 @@ void Game::Input(float dt)
 		cameraPosition.y += dt * speed;
 	if (keys[SDL_SCANCODE_Z])
 		cameraPosition.y -= dt * speed;
+
+	if (keys[SDL_SCANCODE_UP]) craneAcceleration = 6.f;
+	else if (keys[SDL_SCANCODE_DOWN]) craneAcceleration = -6.f;
+	else craneAcceleration = 0;
+
+	if (keys[SDL_SCANCODE_LEFT]) craneYaw += dt * 0.4f;
+	if (keys[SDL_SCANCODE_RIGHT]) craneYaw -= dt * 0.4f;
 }
 
 
@@ -278,7 +285,21 @@ void Game::Step(float dt)
 {
 	if (!physicsPaused) dynamicsWorld->stepSimulation(dt);
 	lightPosition = glm::vec3(100 * cos(lightAngle), 20.0, 100 * sin(lightAngle));
-	lightAngle += dt *0.5;
+	lightAngle += dt *0.5f;
+
+	craneVelocity += craneAcceleration * dt;
+	if (craneVelocity > 15.f) craneVelocity = 15.f;
+	if (craneVelocity < -15.f) craneVelocity = -15.f;
+	craneVelocity *= 0.98f;
+
+	craneDirection = glm::vec3(
+		sin(craneYaw),
+		0,
+		cos(craneYaw));
+
+	cranePosition += craneDirection * craneVelocity * dt;
+
+	timer = glm::length(cranePosition)* 5.f;
 }
 
 void Game::Render()
@@ -336,31 +357,50 @@ void Game::Render()
 	}
 
 	glm::mat4 model = glm::mat4(1.0);
-	
 	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
 	resourceManager.getTexture("terrain")->use();
 	resourceManager.getModel(terrainModel)->render();
 
 	resourceManager.getTexture("skybox")->use();
 	resourceManager.getModel("skybox")->render();
+
+	glm::mat4 craneMatrix = glm::mat4(1.0);
+	craneMatrix = glm::translate(craneMatrix, cranePosition );
+	craneMatrix = glm::rotate(craneMatrix, craneYaw, glm::vec3(0, 1, 0));
 	
-	
-	model = glm::mat4(1.0);
-	model = glm::translate(model, cranePosition);
-	model = glm::scale(model, glm::vec3(5.f, 5.f, 5.f));
-	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+	for (auto obj : resourceManager.getModel("crane")->objects)
+	{
+		if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
+			obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
+
+		for (auto segment : obj.second->segments)
+		{
+			model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
+			model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
+
+			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
+			resourceManager.getTexture("gasienica")->use();
+			resourceManager.getModel("gasieniacapart")->render();
+		}
+	}
 
 	for (auto obj : resourceManager.getModel("crane")->objects)
 	{
+		model = craneMatrix;
+
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
 		if (!obj.second->material.texture.empty())
 			resourceManager.getTexture(obj.second->material.texture)->use();
-
+		
 		gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
 		gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
 		gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
 
 		obj.second->render();
 	}
+
 
 	drawGUI();
 	SDL_GL_SwapWindow(mainWindow);

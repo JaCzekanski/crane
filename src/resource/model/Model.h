@@ -25,12 +25,38 @@ struct Material
 	std::string texture;
 };
 
+struct Segment
+{
+	glm::vec3 start;
+	glm::vec3 end;
+
+	float getAngle()
+	{
+		return atan2f(end.z - start.z, end.y - start.y);
+	}
+	
+	// position from 0.f to 1.f
+	glm::vec3 getPosition( float position )
+	{
+		position = fmod(position, 1.f);
+		if (position < 0.f) position = 1.f + position;
+
+		return ((end - start) * position) + start;
+	}
+
+	glm::vec3 getCenter()
+	{
+		return (start + end) * 0.5f;
+	}
+};
+
 struct ModelObject
 {
 	GLuint vbo; // Buffer
 	GLuint vao; // Metadata 
 	int size;
 	std::vector<modelVertice> data;
+	std::vector<Segment> segments;
 	Material material;
 
 	bool use()
@@ -55,7 +81,7 @@ class Model
 	std::unordered_map<std::string, Material> materials;
 	std::string materialFile;
 
-	void commit(std::string objectName, std::string materialName, std::vector<modelVertice> &data);
+	void commit(std::string objectName, std::string materialName, std::vector<modelVertice> &data, std::vector<Segment> &segments);
 
 	std::unordered_map<std::string, Material> parseMaterialFile(std::string filename);
 public:

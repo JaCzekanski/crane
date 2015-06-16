@@ -30,6 +30,7 @@ bool Model::load()
 	bool normal = false;
 
 	std::vector<modelVertice> data;
+	std::vector<Segment> segments;
 	std::string objectName = "default";
 	std::string materialName = "";
 	std::vector<glm::vec3> vertices;
@@ -159,14 +160,25 @@ bool Model::load()
 		}
 		else if (t.s == "o")
 		{
-			if (!data.empty()) commit(objectName, materialName, data);// commit current changes
+			if (!data.empty() || !segments.empty()) commit(objectName, materialName, data, segments);// commit current changes
 			t = tokenizer.getToken();
 			objectName = t.s;
+		}
+		else if (t.s == "l")
+		{
+			Segment segment;
+			t = tokenizer.getToken();
+			segment.start = vertices[t.i-1];
+
+			t = tokenizer.getToken();
+			segment.end = vertices[t.i - 1];
+
+			segments.push_back(segment);
 		}
 		else tokenizer.nextLine();
 		
 	}
-	if (!data.empty()) commit(objectName, materialName, data);
+	if (!data.empty()) commit(objectName, materialName, data, segments);
 	vertices.clear();
 	normals.clear();
 	coords.clear();
@@ -175,30 +187,33 @@ bool Model::load()
 	return true;
 }
 
-void Model::commit(std::string objectName, std::string materialName, std::vector<modelVertice> &data)
+void Model::commit(std::string objectName, std::string materialName, std::vector<modelVertice> &data, std::vector<Segment> &segments)
 {
 	std::shared_ptr<ModelObject> object(new ModelObject());
 
 	object->data = data;
+	object->segments = segments;
 	if (materials.find(materialName) != materials.end()) object->material = materials.find(materialName)->second;
 	object->size = data.size();
 
-	gl::GenVertexArrays(1, &object->vao);
-	gl::BindVertexArray(object->vao);
+	if (!data.empty()) {
+		gl::GenVertexArrays(1, &object->vao);
+		gl::BindVertexArray(object->vao);
 
-	gl::GenBuffers(1, &object->vbo);
-	gl::BindBuffer(gl::ARRAY_BUFFER, object->vbo);
-	gl::BufferData(gl::ARRAY_BUFFER, object->data.size()*sizeof(modelVertice), &object->data[0], gl::STATIC_DRAW);
+		gl::GenBuffers(1, &object->vbo);
+		gl::BindBuffer(gl::ARRAY_BUFFER, object->vbo);
+		gl::BufferData(gl::ARRAY_BUFFER, object->data.size()*sizeof(modelVertice), &object->data[0], gl::STATIC_DRAW);
 
-	gl::VertexAttribPointer(0, 3, gl::FLOAT, false, sizeof(modelVertice), 0);
-	gl::VertexAttribPointer(1, 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
-	gl::VertexAttribPointer(2, 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
+		gl::VertexAttribPointer(0, 3, gl::FLOAT, false, sizeof(modelVertice), 0);
+		gl::VertexAttribPointer(1, 3, gl::FLOAT, false, sizeof(modelVertice), (void*)(3 * sizeof(GLfloat)));
+		gl::VertexAttribPointer(2, 2, gl::FLOAT, false, sizeof(modelVertice), (void*)(6 * sizeof(GLfloat)));
 
-	gl::EnableVertexAttribArray(0);
-	gl::EnableVertexAttribArray(1);
-	gl::EnableVertexAttribArray(2);
+		gl::EnableVertexAttribArray(0);
+		gl::EnableVertexAttribArray(1);
+		gl::EnableVertexAttribArray(2);
 
-	gl::BindVertexArray(0);
+		gl::BindVertexArray(0);
+	}
 
 	objects.emplace(objectName, object);
 
@@ -240,7 +255,7 @@ std::unordered_map<std::string, Material> Model::parseMaterialFile(std::string f
 			{
 				t = tokenizer.getToken();
 				if (t.type != Token::Type::Float) error("float");
-				if (t.f < 0.3) t.f = 0.3;
+				if (t.f < 0.5) t.f = 0.5;
 				material.ambient[i] = t.f;
 			}
 			tokenizer.nextLine();

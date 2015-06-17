@@ -175,6 +175,44 @@ void Game::Run()
 
 	}
 
+	GLuint fboId;
+	GLuint depthTextureId;
+
+	const float SHADOW_MAP_RATIO = 1.f;
+	// generateShadowFBO
+	{
+		int shadowMapWidth = resolutionWidth * SHADOW_MAP_RATIO;
+		int shadowMapHeight = resolutionHeight * SHADOW_MAP_RATIO;
+
+		GLenum status;
+
+		gl::GenTextures(1, &depthTextureId);
+		gl::BindTexture(gl::TEXTURE_2D, depthTextureId);
+
+		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
+		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
+
+		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
+		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
+
+		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, gl::DEPTH_COMPONENT, gl::UNSIGNED_BYTE, 0);
+		gl::BindTexture(gl::TEXTURE_2D, 0);
+
+		gl::GenFramebuffers(1, &fboId);
+		gl::BindFramebuffer(gl::FRAMEBUFFER, fboId);
+
+		gl::DrawBuffer(gl::NONE);
+		gl::ReadBuffer(gl::NONE);
+
+		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, depthTextureId, 0);
+
+		status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+		if (status != gl::FRAMEBUFFER_COMPLETE)
+			logger.Error("gl::FRAMEBUFFER_COMPLETE failed, cannot use FBO");
+
+		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+	}
+
 
 	float dt = 0.0f; // Czas od ostatniej klatki
 	float lastUpdate = ((float)SDL_GetTicks())/1000.0f; // Czas ostatniej aktualizacji
@@ -333,8 +371,8 @@ void Game::Render()
 	gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
 	gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
 	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
-	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
 	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(ambient));
+	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
 	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
 	gl::Uniform1i(program->getUniform("texture"), 0);
 
@@ -365,6 +403,17 @@ void Game::Render()
 	resourceManager.getTexture("skybox")->use();
 	resourceManager.getModel("skybox")->render();
 
+	model = glm::translate(model, glm::vec3(0, 5.f, 0));
+	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
+	auto torus = resourceManager.getModel("torus");
+	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(torus->objects.begin()->second->material.diffuse));
+	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(torus->objects.begin()->second->material.ambient));
+	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(torus->objects.begin()->second->material.specular));
+
+	resourceManager.getTexture("bunny")->use();
+	torus->render();
+	
 	glm::mat4 craneMatrix = glm::mat4(1.0);
 	craneMatrix = glm::translate(craneMatrix, cranePosition );
 	craneMatrix = glm::rotate(craneMatrix, craneYaw, glm::vec3(0, 1, 0));

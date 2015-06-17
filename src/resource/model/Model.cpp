@@ -255,7 +255,7 @@ std::unordered_map<std::string, Material> Model::parseMaterialFile(std::string f
 			{
 				t = tokenizer.getToken();
 				if (t.type != Token::Type::Float) error("float");
-				if (t.f < 0.5) t.f = 0.5;
+				if (t.f < 0.3) t.f = 0.3;
 				material.ambient[i] = t.f;
 			}
 			tokenizer.nextLine();

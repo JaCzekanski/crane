@@ -43,8 +43,8 @@ private:
 	float FPS = 0;
 
 	// Light
-	glm::vec3 diffuse = glm::vec3(0.75, 0.75, 0.75);
 	glm::vec3 ambient = glm::vec3(0.75, 0.75, 0.75);
+	glm::vec3 diffuse = glm::vec3(0.75, 0.75, 0.75);
 	glm::vec3 specular = glm::vec3(0.0, 0.0, 0.0);
 
 	// Physics

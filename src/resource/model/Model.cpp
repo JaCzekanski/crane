@@ -218,6 +218,7 @@ void Model::commit(std::string objectName, std::string materialName, std::vector
 	objects.emplace(objectName, object);
 
 	data.clear();
+	segments.clear();
 	// TODO: No buffers deallocation!!!
 }
 

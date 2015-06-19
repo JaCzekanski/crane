@@ -27,7 +27,8 @@ class Game
 {
 private:
 	int resolutionWidth = 800, resolutionHeight = 600;
-	
+	int shadowMapWidth = 1024, shadowMapHeight = 1024;
+
 	ResourceManager resourceManager;
 
 	// SDL
@@ -43,8 +44,10 @@ private:
 	float FPS = 0;
 
 	// Light
-	glm::vec3 ambient = glm::vec3(0.75, 0.75, 0.75);
-	glm::vec3 diffuse = glm::vec3(0.75, 0.75, 0.75);
+	GLuint depthMapFBO;
+	GLuint depthMap;
+	glm::vec3 ambient = glm::vec3(0.5, 0.5, 0.5);
+	glm::vec3 diffuse = glm::vec3(0.5, 0.5, 0.5);
 	glm::vec3 specular = glm::vec3(0.0, 0.0, 0.0);
 
 	// Physics
@@ -52,7 +55,7 @@ private:
 	btDiscreteDynamicsWorld* dynamicsWorld;
 
 	// Temporary
-	std::string terrainModel = "simple_terrain";
+	std::string terrainModel = "terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;
@@ -61,7 +64,7 @@ private:
 	float lightAngle;
 	float timer;
 
-	glm::vec3 cranePosition, craneDirection;
+	glm::vec3 cranePosition = glm::vec3(0.0, 3.0, 0.0), craneDirection;
 	float craneVelocity, craneAcceleration;
 	float craneYaw;
 

@@ -67,6 +67,7 @@ struct ModelObject
 
 	bool render()
 	{
+		if (data.empty()) return false;
 		use();
 		gl::DrawArrays(gl::TRIANGLES, 0, size);
 		return true;

@@ -175,41 +175,26 @@ void Game::Run()
 
 	}
 
-	GLuint fboId;
-	GLuint depthTextureId;
-
-	const float SHADOW_MAP_RATIO = 1.f;
-	// generateShadowFBO
 	{
-		int shadowMapWidth = resolutionWidth * SHADOW_MAP_RATIO;
-		int shadowMapHeight = resolutionHeight * SHADOW_MAP_RATIO;
+		gl::GenFramebuffers(1, &depthMapFBO);
 
-		GLenum status;
-
-		gl::GenTextures(1, &depthTextureId);
-		gl::BindTexture(gl::TEXTURE_2D, depthTextureId);
-
+		gl::GenTextures(1, &depthMap);
+		gl::BindTexture(gl::TEXTURE_2D, depthMap);
+		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, gl::DEPTH_COMPONENT, gl::FLOAT, NULL);
+		
 		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
 		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
 
-		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
-		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
+		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER);
+		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER);
+		float borderColor[] = { 1.f, 1.f, 1.f, 1.f };
+		gl::TexParameterfv(gl::TEXTURE_2D, gl::TEXTURE_BORDER_COLOR, borderColor);
 
-		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, gl::DEPTH_COMPONENT, gl::UNSIGNED_BYTE, 0);
-		gl::BindTexture(gl::TEXTURE_2D, 0);
 
-		gl::GenFramebuffers(1, &fboId);
-		gl::BindFramebuffer(gl::FRAMEBUFFER, fboId);
-
+		gl::BindFramebuffer(gl::FRAMEBUFFER, depthMapFBO);
+		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, depthMap, 0);
 		gl::DrawBuffer(gl::NONE);
 		gl::ReadBuffer(gl::NONE);
-
-		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, depthTextureId, 0);
-
-		status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-		if (status != gl::FRAMEBUFFER_COMPLETE)
-			logger.Error("gl::FRAMEBUFFER_COMPLETE failed, cannot use FBO");
-
 		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
 
@@ -322,8 +307,8 @@ void Game::Input(float dt)
 void Game::Step(float dt)
 {
 	if (!physicsPaused) dynamicsWorld->stepSimulation(dt);
-	lightPosition = glm::vec3(100 * cos(lightAngle), 20.0, 100 * sin(lightAngle));
-	lightAngle += dt *0.5f;
+	lightPosition = glm::vec3(20 * cos(lightAngle), 7.0, 20 * sin(lightAngle));
+	lightAngle += dt * 0.5f;
 
 	craneVelocity += craneAcceleration * dt;
 	if (craneVelocity > 15.f) craneVelocity = 15.f;
@@ -342,116 +327,154 @@ void Game::Step(float dt)
 
 void Game::Render()
 {
-	gl::Enable(gl::DEPTH_TEST);
-	gl::Enable(gl::BLEND);
-	gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-	gl::Disable(gl::CULL_FACE);
-	gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
-
-	gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
-	gl::ClearDepth(1.0f);
-	gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
-	auto program = resourceManager.getProgram("normal");
-	program->use();
-
-	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 1000.0f);
-
-	cameraDirection = glm::vec3(
-		cos(cameraPitch) * sin(cameraYaw),
-		sin(cameraPitch),
-		cos(cameraPitch) * cos(cameraYaw));
-
-	glm::mat4 view = glm::lookAt(
-		cameraPosition,
-		cameraPosition + cameraDirection,
-		cameraUp);
-
-	gl::UniformMatrix4fv(program->getUniform("proj"), 1, false, glm::value_ptr(projection));
-	gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
-	gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
-	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
-	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(ambient));
-	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
-	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
-	gl::Uniform1i(program->getUniform("texture"), 0);
-
-	resourceManager.getTexture("bunny")->use();
-	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
-	{
-		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
-		btRigidBody* body = btRigidBody::upcast(obj);
-
-		btTransform transform;
-		body->getMotionState()->getWorldTransform(transform);
-
-		glm::mat4 model = glm::mat4(1.0);
-		glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-		model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
-		model = model * glm::mat4_cast(rotation);
-
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		resourceManager.getModel("bunny")->render();
-	}
-
-	glm::mat4 model = glm::mat4(1.0);
-	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-
-	resourceManager.getTexture("terrain")->use();
-	resourceManager.getModel(terrainModel)->render();
-
-	resourceManager.getTexture("skybox")->use();
-	resourceManager.getModel("skybox")->render();
-
-	model = glm::translate(model, glm::vec3(0, 5.f, 0));
-	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-
-	auto torus = resourceManager.getModel("torus");
-	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(torus->objects.begin()->second->material.diffuse));
-	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(torus->objects.begin()->second->material.ambient));
-	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(torus->objects.begin()->second->material.specular));
-
-	resourceManager.getTexture("bunny")->use();
-	torus->render();
-	
-	glm::mat4 craneMatrix = glm::mat4(1.0);
-	craneMatrix = glm::translate(craneMatrix, cranePosition );
-	craneMatrix = glm::rotate(craneMatrix, craneYaw, glm::vec3(0, 1, 0));
-	
-	for (auto obj : resourceManager.getModel("crane")->objects)
-	{
-		if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
-			obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
-
-		for (auto segment : obj.second->segments)
+	for (int i = 0; i < 2; i++) {
+		std::shared_ptr<Program> program;
+		if (i == 0) // Shadow redner
 		{
-			model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
-			model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
+			gl::Viewport(0, 0, shadowMapWidth, shadowMapHeight);
+			gl::BindFramebuffer(gl::FRAMEBUFFER, depthMapFBO);
+			gl::Clear(gl::DEPTH_BUFFER_BIT);
+			gl::Enable(gl::CULL_FACE);
+			gl::CullFace(gl::FRONT);
+
+			program = resourceManager.getProgram("shadow");
+			program->use();
+		}
+		else {
+			gl::Viewport(0, 0, resolutionWidth, resolutionHeight);
+			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+			gl::Enable(gl::DEPTH_TEST);
+			gl::Enable(gl::BLEND);
+			gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+			gl::Disable(gl::CULL_FACE);
+			gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
+
+
+			gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
+			gl::ClearDepth(1.0f);
+			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+			program = resourceManager.getProgram("normal");
+			program->use();
+
+			cameraDirection = glm::vec3(
+				cos(cameraPitch) * sin(cameraYaw),
+				sin(cameraPitch),
+				cos(cameraPitch) * cos(cameraYaw));
+
+			glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 1000.0f);
+			glm::mat4 view = glm::lookAt(
+				cameraPosition,
+				cameraPosition + cameraDirection,
+				cameraUp);
+			gl::UniformMatrix4fv(program->getUniform("proj"), 1, false, glm::value_ptr(projection));
+			gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
+
+			gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
+			gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
+			gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(ambient));
+			gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
+			gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
+			gl::Uniform1i(program->getUniform("texture"), 0);
+			gl::Uniform1i(program->getUniform("shadowMap"), 1);
+
+			gl::ActiveTexture(gl::TEXTURE1);
+			gl::BindTexture(gl::TEXTURE_2D, depthMap);
+			gl::ActiveTexture(gl::TEXTURE0);
+		}
+
+		{
+			glm::mat4 lightProjection = glm::ortho(-25.f, 25.f, -25.f, 25.f, 0.1f, 1000.f);
+			glm::mat4 lightView = glm::lookAt(lightPosition, glm::vec3(0.0f), glm::vec3(1.0f));
+			glm::mat4 lightSpace = lightProjection * lightView;
+			gl::UniformMatrix4fv(program->getUniform("lightSpace"), 1, false, glm::value_ptr(lightSpace));
+		}
+
+		resourceManager.getTexture("bunny")->use();
+		for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
+		{
+			btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
+			btRigidBody* body = btRigidBody::upcast(obj);
+
+			btTransform transform;
+			body->getMotionState()->getWorldTransform(transform);
+
+			glm::mat4 model = glm::mat4(1.0);
+			glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+			model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
+			model = model * glm::mat4_cast(rotation);
 
 			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+			resourceManager.getModel("bunny")->render();
+		}
 
-			resourceManager.getTexture("gasienica")->use();
-			resourceManager.getModel("gasieniacapart")->render();
+		glm::mat4 model = glm::mat4(1.0);
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
+		if (i == 1) {
+
+			resourceManager.getTexture("terrain")->use();
+			resourceManager.getModel(terrainModel)->render();
+
+			resourceManager.getTexture("skybox")->use();
+			resourceManager.getModel("skybox")->render();
+
+			model = glm::mat4(1.0);
+			model = glm::translate(model, lightPosition);
+			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+			resourceManager.getTexture("bunny")->use();
+			resourceManager.getModel("torus")->render();
+		}
+
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(0, 5.f, 0));
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
+		auto torus = resourceManager.getModel("torus");
+		gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(torus->objects.begin()->second->material.diffuse));
+		gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(torus->objects.begin()->second->material.ambient));
+		gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(torus->objects.begin()->second->material.specular));
+
+		resourceManager.getTexture("bunny")->use();
+		torus->render();
+
+		glm::mat4 craneMatrix = glm::mat4(1.0);
+		craneMatrix = glm::translate(craneMatrix, cranePosition);
+		craneMatrix = glm::rotate(craneMatrix, craneYaw, glm::vec3(0, 1, 0));
+
+		for (auto obj : resourceManager.getModel("crane")->objects)
+		{
+			if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
+				obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
+
+			for (auto segment : obj.second->segments)
+			{
+				model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
+				model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
+
+				gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+
+				resourceManager.getTexture("gasienica")->use();
+				resourceManager.getModel("gasieniacapart")->render();
+			}
+		}
+
+		for (auto obj : resourceManager.getModel("crane")->objects)
+		{
+			model = craneMatrix;
+
+			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+			if (!obj.second->material.texture.empty())
+				resourceManager.getTexture(obj.second->material.texture)->use();
+
+			gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
+			gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
+			gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
+
+			obj.second->render();
 		}
 	}
-
-	for (auto obj : resourceManager.getModel("crane")->objects)
-	{
-		model = craneMatrix;
-
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		if (!obj.second->material.texture.empty())
-			resourceManager.getTexture(obj.second->material.texture)->use();
-		
-		gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
-		gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
-		gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
-
-		obj.second->render();
-	}
-
-
-	drawGUI();
+	//drawGUI();
 	SDL_GL_SwapWindow(mainWindow);
 }
 

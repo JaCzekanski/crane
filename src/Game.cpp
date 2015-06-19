@@ -65,6 +65,8 @@ Game::Game()
 	logger.Info("Graphics card: %s", gl::GetString(gl::RENDERER));
 	logger.Info("OpenGL version: %d.%d", gl::sys::GetMajorVersion(), gl::sys::GetMinorVersion());
 
+	initializePhysics();
+	createShadowmap();
 
 	ImGui_SDL2_Init(mainWindow);
 	initialized = true;
@@ -73,6 +75,7 @@ Game::Game()
 
 Game::~Game() 
 {
+	// TODO: No opengl cleaning
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(mainWindow);
 	SDL_Quit();
@@ -83,15 +86,47 @@ void Game::Run()
 {
 	if (!initialized) return;
 	SDL_ShowWindow(mainWindow);
-	
-	cameraPosition = glm::vec3(0.0f, 5.0f, 15.0f);
-	cameraDirection = glm::vec3(0.0f, 0.0f, -1.0f);
-	cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-	cameraYaw = (float)M_PI;
-
 	focusGained();
 
+	const float TIME_STEP = 1.f / 60.f; // Physics timestep
+
+	float dt = 0.0f;
+	float lastUpdate = ((float)SDL_GetTicks())/1000.0f;
+	float accumulator = 0.0f;
+	float frames = 0;
+	float fpsTime = 0;
+
+	while (gameState != State::Quit)
+	{
+		dt = (((float)SDL_GetTicks()) / 1000.0f) - lastUpdate;
+		lastUpdate += dt;
+		dt = std::max(0.0f, dt);
+		accumulator += dt;
+
+		frames++;
+		fpsTime += dt;
+		if (fpsTime >= .25f)
+		{
+			FPS = frames / fpsTime;
+			frames = 0;
+			fpsTime = 0.f;
+		}
+
+		resourceManager.scanAndReload();
+		Input(dt);
+		while (accumulator > TIME_STEP)
+		{
+			Step(TIME_STEP);
+			accumulator -= TIME_STEP;
+		}
+		Render();
+		SDL_Delay(1);
+	}
+
+}
+
+void Game::initializePhysics()
+{
 	btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
 	btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 	btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
@@ -174,67 +209,30 @@ void Game::Run()
 		}
 
 	}
+}
 
-	{
-		gl::GenFramebuffers(1, &depthMapFBO);
+void Game::createShadowmap()
+{
+	gl::GenFramebuffers(1, &depthMapFBO);
 
-		gl::GenTextures(1, &depthMap);
-		gl::BindTexture(gl::TEXTURE_2D, depthMap);
-		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, gl::DEPTH_COMPONENT, gl::FLOAT, NULL);
-		
-		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
-		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
+	gl::GenTextures(1, &depthMap);
+	gl::BindTexture(gl::TEXTURE_2D, depthMap);
+	gl::TexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, gl::DEPTH_COMPONENT, gl::FLOAT, NULL);
 
-		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER);
-		gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER);
-		float borderColor[] = { 1.f, 1.f, 1.f, 1.f };
-		gl::TexParameterfv(gl::TEXTURE_2D, gl::TEXTURE_BORDER_COLOR, borderColor);
+	gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
+	gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
 
-
-		gl::BindFramebuffer(gl::FRAMEBUFFER, depthMapFBO);
-		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, depthMap, 0);
-		gl::DrawBuffer(gl::NONE);
-		gl::ReadBuffer(gl::NONE);
-		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-	}
+	gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER);
+	gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER);
+	float borderColor[] = { 1.f, 1.f, 1.f, 1.f };
+	gl::TexParameterfv(gl::TEXTURE_2D, gl::TEXTURE_BORDER_COLOR, borderColor);
 
 
-	float dt = 0.0f; // Czas od ostatniej klatki
-	float lastUpdate = ((float)SDL_GetTicks())/1000.0f; // Czas ostatniej aktualizacji
-
-	float accumulator = 0.0f;
-	const float TIME_STEP = 1.f/60.f; // iloœæ aktualizacji fizyki na sekundê (tutaj 30 milisekund, czyli 30x na sekundê)
-
-	float frames = 0;
-	float fpsTime = 0;
-
-	while (gameState != State::Quit)
-	{
-		dt = (((float)SDL_GetTicks()) / 1000.0f) - lastUpdate;
-		lastUpdate += dt;
-		dt = std::max(0.0f, dt);
-		accumulator += dt;
-
-		frames++;
-		fpsTime += dt;
-		if (fpsTime >= .25f)
-		{
-			FPS = frames / fpsTime;
-			frames = 0;
-			fpsTime = 0.f;
-		}
-
-		resourceManager.scanAndReload();
-		Input(dt);
-		while (accumulator > TIME_STEP)
-		{
-			Step(TIME_STEP);
-			accumulator -= TIME_STEP;
-		}
-		Render();
-		SDL_Delay(1);
-	}
-
+	gl::BindFramebuffer(gl::FRAMEBUFFER, depthMapFBO);
+	gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, depthMap, 0);
+	gl::DrawBuffer(gl::NONE);
+	gl::ReadBuffer(gl::NONE);
+	gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 }
 
 void Game::Input(float dt)
@@ -273,7 +271,7 @@ void Game::Input(float dt)
 		else if (event.type == SDL_MOUSEWHEEL)
 		{
 			ImGui_SDL2_ScrollCallback(event.wheel.y);
-			if (isWindowFocused) cameraPosition.y += event.wheel.y * dt * speed;
+			if (isWindowFocused) camera.position.y += event.wheel.y * dt * speed;
 		}
 	}
 	const Uint8* keys = SDL_GetKeyboardState(NULL);
@@ -282,25 +280,25 @@ void Game::Input(float dt)
 	if (keys[SDL_SCANCODE_LCTRL]) speed = 20.f;
 
 	if (keys[SDL_SCANCODE_W])
-		cameraPosition += cameraDirection * dt * speed;
+		camera.position += camera.direction * dt * speed;
 	if (keys[SDL_SCANCODE_S])
-		cameraPosition -= cameraDirection * dt * speed;
+		camera.position -= camera.direction * dt * speed;
 	if (keys[SDL_SCANCODE_A])
-		cameraPosition -= glm::cross(glm::vec3(sin(cameraYaw), 0, cos(cameraYaw)), cameraUp) * dt * speed;
+		camera.position -= glm::cross(glm::vec3(sin(camera.yaw), 0, cos(camera.yaw)), camera.up) * dt * speed;
 	if (keys[SDL_SCANCODE_D])
-		cameraPosition += glm::cross(glm::vec3(sin(cameraYaw), 0, cos(cameraYaw)), cameraUp) * dt * speed;
+		camera.position += glm::cross(glm::vec3(sin(camera.yaw), 0, cos(camera.yaw)), camera.up) * dt * speed;
 
 	if (keys[SDL_SCANCODE_Q])
-		cameraPosition.y += dt * speed;
+		camera.position.y += dt * speed;
 	if (keys[SDL_SCANCODE_Z])
-		cameraPosition.y -= dt * speed;
+		camera.position.y -= dt * speed;
 
-	if (keys[SDL_SCANCODE_UP]) craneAcceleration = 6.f;
-	else if (keys[SDL_SCANCODE_DOWN]) craneAcceleration = -6.f;
-	else craneAcceleration = 0;
+	if (keys[SDL_SCANCODE_UP]) crane.acceleration = 6.f;
+	else if (keys[SDL_SCANCODE_DOWN]) crane.acceleration = -6.f;
+	else crane.acceleration = 0;
 
-	if (keys[SDL_SCANCODE_LEFT]) craneYaw += dt * 0.4f;
-	if (keys[SDL_SCANCODE_RIGHT]) craneYaw -= dt * 0.4f;
+	if (keys[SDL_SCANCODE_LEFT]) crane.yaw += dt * 0.4f;
+	if (keys[SDL_SCANCODE_RIGHT]) crane.yaw -= dt * 0.4f;
 }
 
 
@@ -310,171 +308,127 @@ void Game::Step(float dt)
 	lightPosition = glm::vec3(20 * cos(lightAngle), 7.0, 20 * sin(lightAngle));
 	lightAngle += dt * 0.5f;
 
-	craneVelocity += craneAcceleration * dt;
-	if (craneVelocity > 15.f) craneVelocity = 15.f;
-	if (craneVelocity < -15.f) craneVelocity = -15.f;
-	craneVelocity *= 0.98f;
+	crane.velocity += crane.acceleration * dt;
+	if (crane.velocity > 15.f) crane.velocity = 15.f;
+	if (crane.velocity < -15.f) crane.velocity = -15.f;
+	crane.velocity *= 0.98f;
 
-	craneDirection = glm::vec3(
-		sin(craneYaw),
+	crane.direction = glm::vec3(
+		sin(crane.yaw),
 		0,
-		cos(craneYaw));
+		cos(crane.yaw));
 
-	cranePosition += craneDirection * craneVelocity * dt;
+	crane.position += crane.direction * crane.velocity * dt;
 
-	timer = glm::length(cranePosition)* 5.f;
+	crane.timer = glm::length(crane.position)* 5.f;
+}
+
+void Game::renderScene(std::string shader)
+{
+	auto program = resourceManager.getProgram(shader);
+	//resourceManager.getTexture("bunny")->use();
+	//for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size() - 1; i++)
+	//{
+	//	btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1 + i];
+	//	btRigidBody* body = btRigidBody::upcast(obj);
+
+	//	btTransform transform;
+	//	body->getMotionState()->getWorldTransform(transform);
+
+	//	glm::mat4 model = glm::mat4(1.0);
+	//	glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+	//	model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
+	//	model = model * glm::mat4_cast(rotation);
+
+	//	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+	//	resourceManager.getModel("bunny")->render();
+	//}
+
+	if (shader != shadowmapShader) {
+		glm::mat4 model = glm::mat4(1.0);
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getTexture("terrain")->use();
+		resourceManager.getModel(terrainModel)->render();
+		resourceManager.getTexture("skybox")->use();
+		resourceManager.getModel("skybox")->render();
+	}
+
+	crane.render(shader);
+}
+
+void Game::beginNormalRender()
+{
+	gl::Viewport(0, 0, resolutionWidth, resolutionHeight);
+	gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+	gl::Enable(gl::DEPTH_TEST);
+	gl::Enable(gl::BLEND);
+	gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+	gl::Disable(gl::CULL_FACE);
+	gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
+
+	gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
+	gl::ClearDepth(1.0f);
+	gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+	auto program = resourceManager.getProgram(normalShader);
+	program->use();
+
+	camera.direction = glm::vec3(
+		cos(camera.pitch) * sin(camera.yaw),
+		sin(camera.pitch),
+		cos(camera.pitch) * cos(camera.yaw));
+
+	glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 1000.0f);
+	glm::mat4 view = camera.getView();
+	gl::UniformMatrix4fv(program->getUniform("proj"), 1, false, glm::value_ptr(projection));
+	gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
+
+	gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
+	gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(camera.position));
+	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(ambient));
+	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
+	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
+	gl::Uniform1i(program->getUniform("texture"), 0);
+	gl::Uniform1i(program->getUniform("shadowMap"), 1);
+
+	gl::ActiveTexture(gl::TEXTURE1);
+	gl::BindTexture(gl::TEXTURE_2D, depthMap);
+	gl::ActiveTexture(gl::TEXTURE0);
+
+	glm::mat4 lightProjection = glm::ortho(-25.f, 25.f, -25.f, 25.f, 0.1f, 1000.f);
+	glm::mat4 lightView = glm::lookAt(lightPosition, glm::vec3(0.0f), glm::vec3(1.0f));
+	glm::mat4 lightSpace = lightProjection * lightView;
+	gl::UniformMatrix4fv(program->getUniform("lightSpace"), 1, false, glm::value_ptr(lightSpace));
+}
+
+void Game::beginShadowmapRender()
+{
+	gl::Viewport(0, 0, shadowMapWidth, shadowMapHeight);
+	gl::BindFramebuffer(gl::FRAMEBUFFER, depthMapFBO);
+	gl::Clear(gl::DEPTH_BUFFER_BIT);
+	gl::Enable(gl::DEPTH_TEST);
+	gl::Enable(gl::CULL_FACE);
+	gl::CullFace(gl::FRONT);
+
+	gl::ActiveTexture(gl::TEXTURE0);
+	auto program = resourceManager.getProgram(shadowmapShader);
+	program->use();
+
+	glm::mat4 lightProjection = glm::ortho(-25.f, 25.f, -25.f, 25.f, 0.1f, 1000.f);
+	glm::mat4 lightView = glm::lookAt(lightPosition, glm::vec3(0.0f), glm::vec3(1.0f));
+	glm::mat4 lightSpace = lightProjection * lightView;
+	gl::UniformMatrix4fv(program->getUniform("lightSpace"), 1, false, glm::value_ptr(lightSpace));
 }
 
 void Game::Render()
 {
-	for (int i = 0; i < 2; i++) {
-		std::shared_ptr<Program> program;
-		if (i == 0) // Shadow redner
-		{
-			gl::Viewport(0, 0, shadowMapWidth, shadowMapHeight);
-			gl::BindFramebuffer(gl::FRAMEBUFFER, depthMapFBO);
-			gl::Clear(gl::DEPTH_BUFFER_BIT);
-			gl::Enable(gl::CULL_FACE);
-			gl::CullFace(gl::FRONT);
+	beginShadowmapRender();
+	renderScene(shadowmapShader);
 
-			program = resourceManager.getProgram("shadow");
-			program->use();
-		}
-		else {
-			gl::Viewport(0, 0, resolutionWidth, resolutionHeight);
-			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-			gl::Enable(gl::DEPTH_TEST);
-			gl::Enable(gl::BLEND);
-			gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-			gl::Disable(gl::CULL_FACE);
-			gl::PolygonMode(gl::FRONT_AND_BACK, wireframe ? gl::LINE : gl::FILL);
+	beginNormalRender();
+	renderScene(normalShader);
 
-
-			gl::ClearColor(1.f, 1.f, 1.f, 1.0f);
-			gl::ClearDepth(1.0f);
-			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
-			program = resourceManager.getProgram("normal");
-			program->use();
-
-			cameraDirection = glm::vec3(
-				cos(cameraPitch) * sin(cameraYaw),
-				sin(cameraPitch),
-				cos(cameraPitch) * cos(cameraYaw));
-
-			glm::mat4 projection = glm::perspective(fov, (float)resolutionWidth / (float)resolutionHeight, 0.1f, 1000.0f);
-			glm::mat4 view = glm::lookAt(
-				cameraPosition,
-				cameraPosition + cameraDirection,
-				cameraUp);
-			gl::UniformMatrix4fv(program->getUniform("proj"), 1, false, glm::value_ptr(projection));
-			gl::UniformMatrix4fv(program->getUniform("view"), 1, false, glm::value_ptr(view));
-
-			gl::Uniform3fv(program->getUniform("lightPosition"), 1, glm::value_ptr(lightPosition));
-			gl::Uniform3fv(program->getUniform("cameraPosition"), 1, glm::value_ptr(cameraPosition));
-			gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(ambient));
-			gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(diffuse));
-			gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
-			gl::Uniform1i(program->getUniform("texture"), 0);
-			gl::Uniform1i(program->getUniform("shadowMap"), 1);
-
-			gl::ActiveTexture(gl::TEXTURE1);
-			gl::BindTexture(gl::TEXTURE_2D, depthMap);
-			gl::ActiveTexture(gl::TEXTURE0);
-		}
-
-		{
-			glm::mat4 lightProjection = glm::ortho(-25.f, 25.f, -25.f, 25.f, 0.1f, 1000.f);
-			glm::mat4 lightView = glm::lookAt(lightPosition, glm::vec3(0.0f), glm::vec3(1.0f));
-			glm::mat4 lightSpace = lightProjection * lightView;
-			gl::UniformMatrix4fv(program->getUniform("lightSpace"), 1, false, glm::value_ptr(lightSpace));
-		}
-
-		resourceManager.getTexture("bunny")->use();
-		for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
-		{
-			btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
-			btRigidBody* body = btRigidBody::upcast(obj);
-
-			btTransform transform;
-			body->getMotionState()->getWorldTransform(transform);
-
-			glm::mat4 model = glm::mat4(1.0);
-			glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-			model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
-			model = model * glm::mat4_cast(rotation);
-
-			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-			resourceManager.getModel("bunny")->render();
-		}
-
-		glm::mat4 model = glm::mat4(1.0);
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-
-		if (i == 1) {
-
-			resourceManager.getTexture("terrain")->use();
-			resourceManager.getModel(terrainModel)->render();
-
-			resourceManager.getTexture("skybox")->use();
-			resourceManager.getModel("skybox")->render();
-
-			model = glm::mat4(1.0);
-			model = glm::translate(model, lightPosition);
-			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-			resourceManager.getTexture("bunny")->use();
-			resourceManager.getModel("torus")->render();
-		}
-
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(0, 5.f, 0));
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-
-		auto torus = resourceManager.getModel("torus");
-		gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(torus->objects.begin()->second->material.diffuse));
-		gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(torus->objects.begin()->second->material.ambient));
-		gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(torus->objects.begin()->second->material.specular));
-
-		resourceManager.getTexture("bunny")->use();
-		torus->render();
-
-		glm::mat4 craneMatrix = glm::mat4(1.0);
-		craneMatrix = glm::translate(craneMatrix, cranePosition);
-		craneMatrix = glm::rotate(craneMatrix, craneYaw, glm::vec3(0, 1, 0));
-
-		for (auto obj : resourceManager.getModel("crane")->objects)
-		{
-			if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
-				obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
-
-			for (auto segment : obj.second->segments)
-			{
-				model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
-				model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
-
-				gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-
-				resourceManager.getTexture("gasienica")->use();
-				resourceManager.getModel("gasieniacapart")->render();
-			}
-		}
-
-		for (auto obj : resourceManager.getModel("crane")->objects)
-		{
-			model = craneMatrix;
-
-			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-			if (!obj.second->material.texture.empty())
-				resourceManager.getTexture(obj.second->material.texture)->use();
-
-			gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
-			gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
-			gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
-
-			obj.second->render();
-		}
-	}
-	//drawGUI();
+	drawGUI();
 	SDL_GL_SwapWindow(mainWindow);
 }
 
@@ -537,10 +491,10 @@ void Game::mouseMove(int xrel, int yrel)
 {
 	const float mouseSpeed = 75.f;
 	float dt = 0.025f;
-	cameraPitch -= ((float)yrel / resolutionHeight) * dt * mouseSpeed;
-	cameraPitch = fmax(fmin(cameraPitch, (M_PI / 2) - 0.0001f), (-M_PI / 2) + 0.0001f);
+	camera.pitch -= ((float)yrel / resolutionHeight) * dt * mouseSpeed;
+	camera.pitch = fmax(fmin(camera.pitch, (M_PI / 2) - 0.0001f), (-M_PI / 2) + 0.0001f);
 
-	cameraYaw -= ((float)xrel / resolutionWidth) * dt * mouseSpeed;
+	camera.yaw -= ((float)xrel / resolutionWidth) * dt * mouseSpeed;
 }
 
 

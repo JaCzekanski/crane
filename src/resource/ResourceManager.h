@@ -80,3 +80,5 @@ public:
 	void scanAndReload();
 };
 
+
+static ResourceManager resourceManager;

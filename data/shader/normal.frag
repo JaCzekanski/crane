@@ -32,9 +32,7 @@ float ShadowCalculation(vec4 pos) //lightSpace
 	float closestDepth = texture2D(shadowMap, projCoords.xy).r;
 	float currentDepth = projCoords.z;
 
-	float bias = max(0.005 * (1.0 - dot(N, L)), 0.00005);
-	//float bias = 0.00005;
-
+	float bias = 0.00005;
 	float shadow = 0; 
 
 	// PCF

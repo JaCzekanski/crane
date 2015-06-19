@@ -43,6 +43,12 @@
     <Filter Include="Source Files\resource\model">
       <UniqueIdentifier>{9ef5e8d1-86d2-4f57-8bde-c106f5cf3bd9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\objects">
+      <UniqueIdentifier>{a5f6fb47-5ab5-47b9-b649-0d44d4fd4179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\objects">
+      <UniqueIdentifier>{579bc5bb-4f63-4b8e-b0d9-9fa33febf20f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Game.cpp">
@@ -79,10 +85,16 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resource\model\Tokenizer.cpp">
-      <Filter>Source Files\resource\model</Filter>    
+      <Filter>Source Files\resource\model</Filter>
     </ClCompile>
     <ClCompile Include="src\lodepng.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\Crane.cpp">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\Camera.cpp">
+      <Filter>Source Files\objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -124,6 +136,12 @@
     </ClInclude>
     <ClInclude Include="src\resource\model\Token.h">
       <Filter>Header Files\resource\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\Crane.h">
+      <Filter>Header Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\Camera.h">
+      <Filter>Header Files\objects</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

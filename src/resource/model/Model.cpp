@@ -233,6 +233,7 @@ std::unordered_map<std::string, Material> Model::parseMaterialFile(std::string f
 
 	std::string materialName;
 	Tokenizer tokenizer(buf);
+	material.texture = filename;
 
 	while (tokenizer.tokenAvailable())
 	{

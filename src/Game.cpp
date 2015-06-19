@@ -103,13 +103,32 @@ void Game::Run()
 	btAlignedObjectArray<btCollisionShape*> collisionShapes;
 
 	{
-		btCollisionShape* ground = new btBoxShape(btVector3(btScalar(250.), btScalar(10.), btScalar(250.)));
+		btTriangleMesh *mesh = new btTriangleMesh();
+
+		auto model = resourceManager.getModel(terrainModel)->objects.begin()->second;
+		for (auto it = model->data.begin(); it != model->data.end(); it += 3)
+		{
+			glm::vec3 v_[3];
+			btVector3 v[3];
+			v_[0] = (*it).position;
+			v_[1] = (*(it + 1)).position;
+			v_[2] = (*(it + 2)).position;
+
+			for (int j = 0; j < 3; j++)
+			{
+				v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
+			}
+
+			mesh->addTriangle(v[0], v[1], v[2]);
+		}
+		
+		btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
 
 		collisionShapes.push_back(ground);
 
 		btTransform groundTransform;
 		groundTransform.setIdentity();
-		groundTransform.setOrigin(btVector3(0, -10.0, 0));
+		groundTransform.setOrigin(btVector3(0, 0, 0));
 		btScalar mass(0);
 
 		bool isDynamic = mass != 0.f;
@@ -120,33 +139,14 @@ void Game::Run()
 		btDefaultMotionState* motionState = new btDefaultMotionState(groundTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, ground, localInertia);
 		btRigidBody* body = new btRigidBody(rbInfo);
+		body->setRestitution(0.75);
 
 		dynamicsWorld->addRigidBody(body);
 	}
 
 	{
-		//btTriangleMesh *mesh = new btTriangleMesh();
-
-		//auto model = resourceManager.getModel("cube");
-		//for (auto it = model->data.begin(); it != model->data.end(); it+=3)
-		//{
-		//	glm::vec3 v_[3];
-		//	btVector3 v[3];
-		//	v_[0] = (*it).position;
-		//	v_[1] = (*(it+1)).position;
-		//	v_[2] = (*(it+2)).position;
-
-		//	for (int j = 0; j < 3; j++)
-		//	{
-		//		v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
-		//	}
-
-		//	mesh->addTriangle(v[0], v[1], v[2]);
-		//}		
-		//
-		//btCollisionShape* shape = new btBvhTriangleMeshShape(mesh, true);//new btBoxShape(btVector3(0.5, 1, 0.5));
-		btCollisionShape* shape = new btBoxShape(btVector3(0.5, 1, 0.5));
-		collisionShapes.push_back(shape);
+		btCollisionShape* track = new btBoxShape(btVector3(btScalar(0.5f), btScalar(0.5f), btScalar(0.5*3)));
+		collisionShapes.push_back(track);
 
 		btTransform startTransform;
 		startTransform.setIdentity();
@@ -156,23 +156,58 @@ void Game::Run()
 		bool isDynamic = (mass != 0.f);
 
 		btVector3 localInertia(0, 0, 0);
-		if (isDynamic) shape->calculateLocalInertia(mass, localInertia);
-
-		for (int i = 0; i < 50; i++)
+		if (isDynamic) track->calculateLocalInertia(mass, localInertia);
+		
+		btRigidBody *body[2];
+		for (int i = 0; i < 2; i++) 
 		{
-			if (i == 0)
-				startTransform.setOrigin(btVector3(0., 50.0, 0.));
-			else
-				startTransform.setOrigin(btVector3(cos((float)i)*5.0f, 150.0f + i*7.0f / sqrt((float)i), sin((float)i)*5.0f));
+			startTransform.setOrigin(btVector3( (i==0)?-1.f:1.f, 10.f, 0.f) );
 			btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
-			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, track, localInertia);
+			body[i] = new btRigidBody(rbInfo);
+			body[i]->setCenterOfMassTransform(startTransform);
+			body[i]->setRestitution(0.5);
+
+			dynamicsWorld->addRigidBody(body[i]);
+		}
+
+		btTypedConstraint *constraint = new btHingeConstraint(*body[0], *body[1], btVector3(1.0f, 0.f, 0.f), btVector3(-1.0f, 0.f, 0.f), 
+							btVector3(1.f, 0.f, 1.f),  btVector3(1.f, 0.f, 1.f));
+		dynamicsWorld->addConstraint(constraint);
+	}
+
+	{
+		const float xScale = 0.5f;
+		const float yScale = 0.5f;
+		const float zScale = 1.2f;
+
+		btCollisionShape* brick = new btBoxShape(btVector3(xScale* 0.5f, yScale* 0.5f, zScale* 0.5f));
+
+		collisionShapes.push_back(brick);
+
+		btTransform transform;
+		transform.setIdentity();
+
+		btScalar mass(1.f);
+
+		bool isDynamic = mass != 0.f;
+
+		btVector3 localInertia(0, 0, 0);
+		if (isDynamic) brick->calculateLocalInertia(mass, localInertia);
+
+
+		for (int y = 0; y < 20; y++)
+		for (int z = -10; z < 10; z++)
+		{
+			transform.setOrigin(btVector3(0.f, 4.f + y*(yScale*1.1f), z*(zScale*1.1f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
+			btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, brick, localInertia);
 			btRigidBody* body = new btRigidBody(rbInfo);
-			body->setCenterOfMassTransform(startTransform);
-			body->setRestitution(0.75);
+			body->setCenterOfMassTransform(transform);
+			body->setRestitution(0.1);
 
 			dynamicsWorld->addRigidBody(body);
 		}
-
 	}
 
 
@@ -180,7 +215,7 @@ void Game::Run()
 	float lastUpdate = ((float)SDL_GetTicks())/1000.0f; // Czas ostatniej aktualizacji
 
 	float accumulator = 0.0f;
-	const float TIME_STEP = 1.f/60.f; // iloœæ aktualizacji fizyki na sekundê (tutaj 30 milisekund, czyli 30x na sekundê)
+	const float TIME_STEP = 1.f/60.f; // iloœæ aktualizacji fizyki na sekundê
 
 	float frames = 0;
 	float fpsTime = 0;
@@ -272,12 +307,40 @@ void Game::Input(float dt)
 	if (keys[SDL_SCANCODE_Z])
 		cameraPosition.y -= dt * speed;
 
-	if (keys[SDL_SCANCODE_UP]) craneAcceleration = 6.f;
-	else if (keys[SDL_SCANCODE_DOWN]) craneAcceleration = -6.f;
-	else craneAcceleration = 0;
+	{
+		btRigidBody* leftTrack = btRigidBody::upcast(dynamicsWorld->getCollisionObjectArray()[1]);
+		btRigidBody* rightTrack = btRigidBody::upcast(dynamicsWorld->getCollisionObjectArray()[2]);
+		if (keys[SDL_SCANCODE_UP]) {
+			leftTrack->applyCentralForce(btVector3(0, 0, -100.f));
+			rightTrack->applyCentralForce(btVector3(0, 0, -100.f));
+		}
+		if (keys[SDL_SCANCODE_DOWN]) {
+			leftTrack->applyCentralForce(btVector3(0, 0, 100.f));
+			rightTrack->applyCentralForce(btVector3(0, 0, 100.f));
+		}
+		if (keys[SDL_SCANCODE_LEFT])
+			rightTrack->applyCentralForce(btVector3(-100.f, 0, 0));
+		if (keys[SDL_SCANCODE_RIGHT])
+			leftTrack->applyCentralForce(btVector3(100.f, 0, 0));
+	}
 
-	if (keys[SDL_SCANCODE_LEFT]) craneYaw += dt * 0.4f;
-	if (keys[SDL_SCANCODE_RIGHT]) craneYaw -= dt * 0.4f;
+
+	//if (keys[SDL_SCANCODE_UP]) craneAcceleration = 6.f;
+	//else if (keys[SDL_SCANCODE_DOWN]) craneAcceleration = -6.f;
+	//else craneAcceleration = 0;
+
+	//if (keys[SDL_SCANCODE_LEFT]) craneYaw += dt * 0.4f;
+	//if (keys[SDL_SCANCODE_RIGHT]) craneYaw -= dt * 0.4f;
+
+	static bool spacePressed = false;
+	if (keys[SDL_SCANCODE_SPACE]) {
+		if (!spacePressed) {
+			dynamicsWorld->stepSimulation(dt);
+		}
+		spacePressed = true;
+	}
+	else spacePressed = false;
+
 }
 
 
@@ -338,10 +401,10 @@ void Game::Render()
 	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(specular));
 	gl::Uniform1i(program->getUniform("texture"), 0);
 
-	resourceManager.getTexture("bunny")->use();
-	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size()-1; i++)
+	//Physics
+	for (int i = 1; i < dynamicsWorld->getCollisionObjectArray().size(); i++)
 	{
-		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1+i];
+		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[i];
 		btRigidBody* body = btRigidBody::upcast(obj);
 
 		btTransform transform;
@@ -353,8 +416,18 @@ void Game::Render()
 		model = model * glm::mat4_cast(rotation);
 
 		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		resourceManager.getModel("bunny")->render();
+
+		if (i == 1 || i == 2) {
+			resourceManager.getTexture("gasienica")->use();
+			resourceManager.getModel("cube")->render();
+		}
+		else {
+			resourceManager.getTexture("brick")->use();
+			resourceManager.getModel("brick")->render();
+		}
 	}
+
+
 
 	glm::mat4 model = glm::mat4(1.0);
 	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
@@ -369,37 +442,37 @@ void Game::Render()
 	craneMatrix = glm::translate(craneMatrix, cranePosition );
 	craneMatrix = glm::rotate(craneMatrix, craneYaw, glm::vec3(0, 1, 0));
 	
-	for (auto obj : resourceManager.getModel("crane")->objects)
-	{
-		if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
-			obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
+	//for (auto obj : resourceManager.getModel("crane")->objects)
+	//{
+	//	if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
+	//		obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
 
-		for (auto segment : obj.second->segments)
-		{
-			model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
-			model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
+	//	for (auto segment : obj.second->segments)
+	//	{
+	//		model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
+	//		model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
 
-			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+	//		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
 
-			resourceManager.getTexture("gasienica")->use();
-			resourceManager.getModel("gasieniacapart")->render();
-		}
-	}
+	//		resourceManager.getTexture("gasienica")->use();
+	//		resourceManager.getModel("gasieniacapart")->render();
+	//	}
+	//}
 
-	for (auto obj : resourceManager.getModel("crane")->objects)
-	{
-		model = craneMatrix;
+	//for (auto obj : resourceManager.getModel("crane")->objects)
+	//{
+	//	model = craneMatrix;
 
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		if (!obj.second->material.texture.empty())
-			resourceManager.getTexture(obj.second->material.texture)->use();
-		
-		gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
-		gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
-		gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
+	//	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+	//	if (!obj.second->material.texture.empty())
+	//		resourceManager.getTexture(obj.second->material.texture)->use();
+	//	
+	//	gl::Uniform3fv(program->getUniform("diffuse"), 1, glm::value_ptr(obj.second->material.diffuse));
+	//	gl::Uniform3fv(program->getUniform("ambient"), 1, glm::value_ptr(obj.second->material.ambient));
+	//	gl::Uniform3fv(program->getUniform("specular"), 1, glm::value_ptr(obj.second->material.specular));
 
-		obj.second->render();
-	}
+	//	obj.second->render();
+	//}
 
 
 	drawGUI();

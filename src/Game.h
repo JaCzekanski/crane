@@ -52,7 +52,7 @@ private:
 	btDiscreteDynamicsWorld* dynamicsWorld;
 
 	// Temporary
-	std::string terrainModel = "simple_terrain";
+	std::string terrainModel = "terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 cameraPosition, cameraDirection, cameraUp;

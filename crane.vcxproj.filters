@@ -96,6 +96,9 @@
     <ClCompile Include="src\objects\Camera.cpp">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\physics.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Game.h">
@@ -142,6 +145,9 @@
     </ClInclude>
     <ClInclude Include="src\objects\Camera.h">
       <Filter>Header Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\physics.h">
+      <Filter>Header Files\utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

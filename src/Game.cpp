@@ -68,6 +68,8 @@ Game::Game()
 	initializePhysics();
 	createShadowmap();
 
+	crane.createPhysicsModel(dynamicsWorld);
+
 	ImGui_SDL2_Init(mainWindow);
 	initialized = true;
 }
@@ -138,77 +140,85 @@ void Game::initializePhysics()
 	btAlignedObjectArray<btCollisionShape*> collisionShapes;
 
 	{
-		btCollisionShape* ground = new btBoxShape(btVector3(btScalar(250.), btScalar(10.), btScalar(250.)));
+		btTriangleMesh *mesh = new btTriangleMesh();
+
+		auto model = resourceManager.getModel(terrainModel)->objects.begin()->second;
+		for (auto it = model->data.begin(); it != model->data.end(); it += 3)
+		{
+			glm::vec3 v_[3];
+			btVector3 v[3];
+			v_[0] = (*it).position;
+			v_[1] = (*(it + 1)).position;
+			v_[2] = (*(it + 2)).position;
+
+			for (int j = 0; j < 3; j++)
+			{
+				v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
+			}
+
+			mesh->addTriangle(v[0], v[1], v[2]);
+		}
+
+		btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
 
 		collisionShapes.push_back(ground);
 
-		btTransform groundTransform;
-		groundTransform.setIdentity();
-		groundTransform.setOrigin(btVector3(0, -10.0, 0));
-		btScalar mass(0);
-
-		bool isDynamic = mass != 0.f;
-
-		btVector3 localInertia(0, 0, 0);
-		if (isDynamic) ground->calculateLocalInertia(mass, localInertia);
-
-		btDefaultMotionState* motionState = new btDefaultMotionState(groundTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, ground, localInertia);
-		btRigidBody* body = new btRigidBody(rbInfo);
-
+		btTransform tr;
+		tr.setIdentity();
+		btRigidBody* body = createRigidBody(0, tr, ground);
 		dynamicsWorld->addRigidBody(body);
 	}
 
-	{
-		//btTriangleMesh *mesh = new btTriangleMesh();
+	//{
+	//	//btTriangleMesh *mesh = new btTriangleMesh();
 
-		//auto model = resourceManager.getModel("cube");
-		//for (auto it = model->data.begin(); it != model->data.end(); it+=3)
-		//{
-		//	glm::vec3 v_[3];
-		//	btVector3 v[3];
-		//	v_[0] = (*it).position;
-		//	v_[1] = (*(it+1)).position;
-		//	v_[2] = (*(it+2)).position;
+	//	//auto model = resourceManager.getModel("cube");
+	//	//for (auto it = model->data.begin(); it != model->data.end(); it+=3)
+	//	//{
+	//	//	glm::vec3 v_[3];
+	//	//	btVector3 v[3];
+	//	//	v_[0] = (*it).position;
+	//	//	v_[1] = (*(it+1)).position;
+	//	//	v_[2] = (*(it+2)).position;
 
-		//	for (int j = 0; j < 3; j++)
-		//	{
-		//		v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
-		//	}
+	//	//	for (int j = 0; j < 3; j++)
+	//	//	{
+	//	//		v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
+	//	//	}
 
-		//	mesh->addTriangle(v[0], v[1], v[2]);
-		//}		
-		//
-		//btCollisionShape* shape = new btBvhTriangleMeshShape(mesh, true);//new btBoxShape(btVector3(0.5, 1, 0.5));
-		btCollisionShape* shape = new btBoxShape(btVector3(0.5, 1, 0.5));
-		collisionShapes.push_back(shape);
+	//	//	mesh->addTriangle(v[0], v[1], v[2]);
+	//	//}		
+	//	//
+	//	//btCollisionShape* shape = new btBvhTriangleMeshShape(mesh, true);//new btBoxShape(btVector3(0.5, 1, 0.5));
+	//	btCollisionShape* shape = new btBoxShape(btVector3(0.5, 1, 0.5));
+	//	collisionShapes.push_back(shape);
 
-		btTransform startTransform;
-		startTransform.setIdentity();
+	//	btTransform startTransform;
+	//	startTransform.setIdentity();
 
-		btScalar mass(1.f);
+	//	btScalar mass(1.f);
 
-		bool isDynamic = (mass != 0.f);
+	//	bool isDynamic = (mass != 0.f);
 
-		btVector3 localInertia(0, 0, 0);
-		if (isDynamic) shape->calculateLocalInertia(mass, localInertia);
+	//	btVector3 localInertia(0, 0, 0);
+	//	if (isDynamic) shape->calculateLocalInertia(mass, localInertia);
 
-		for (int i = 0; i < 50; i++)
-		{
-			if (i == 0)
-				startTransform.setOrigin(btVector3(0., 50.0, 0.));
-			else
-				startTransform.setOrigin(btVector3(cos((float)i)*5.0f, 150.0f + i*7.0f / sqrt((float)i), sin((float)i)*5.0f));
-			btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
-			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
-			btRigidBody* body = new btRigidBody(rbInfo);
-			body->setCenterOfMassTransform(startTransform);
-			body->setRestitution(0.75);
+	//	for (int i = 0; i < 50; i++)
+	//	{
+	//		if (i == 0)
+	//			startTransform.setOrigin(btVector3(0., 50.0, 0.));
+	//		else
+	//			startTransform.setOrigin(btVector3(cos((float)i)*5.0f, 150.0f + i*7.0f / sqrt((float)i), sin((float)i)*5.0f));
+	//		btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
+	//		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
+	//		btRigidBody* body = new btRigidBody(rbInfo);
+	//		body->setCenterOfMassTransform(startTransform);
+	//		body->setRestitution(0.75);
 
-			dynamicsWorld->addRigidBody(body);
-		}
+	//		dynamicsWorld->addRigidBody(body);
+	//	}
 
-	}
+	//}
 }
 
 void Game::createShadowmap()
@@ -293,12 +303,33 @@ void Game::Input(float dt)
 	if (keys[SDL_SCANCODE_Z])
 		camera.position.y -= dt * speed;
 
-	if (keys[SDL_SCANCODE_UP]) crane.acceleration = 6.f;
-	else if (keys[SDL_SCANCODE_DOWN]) crane.acceleration = -6.f;
-	else crane.acceleration = 0;
+	//if (keys[SDL_SCANCODE_UP]) crane.acceleration = 6.f;
+	//else if (keys[SDL_SCANCODE_DOWN]) crane.acceleration = -6.f;
+	//else crane.acceleration = 0;
 
-	if (keys[SDL_SCANCODE_LEFT]) crane.yaw += dt * 0.4f;
-	if (keys[SDL_SCANCODE_RIGHT]) crane.yaw -= dt * 0.4f;
+	float leftTrackSpeed = 0;
+	float rightTrackSpeed = 0;
+	float brake = 0;
+	if (keys[SDL_SCANCODE_UP]) leftTrackSpeed = rightTrackSpeed = 100.f;
+	if (keys[SDL_SCANCODE_DOWN]) leftTrackSpeed = rightTrackSpeed = -100.f;
+	if (keys[SDL_SCANCODE_LEFT]) {
+		leftTrackSpeed += 75.f;
+		rightTrackSpeed -= 75.f;
+	}
+	if (keys[SDL_SCANCODE_RIGHT]) {
+		rightTrackSpeed += 75.f;
+		leftTrackSpeed -= 75.f;
+	}
+	if (keys[SDL_SCANCODE_SPACE]) brake = 1.f;
+
+
+	for (int i = 0; i < crane.vehicle->getNumWheels(); i++)  {
+		float craneSpeed = 0;
+		if (i < 4) craneSpeed = leftTrackSpeed;
+		else craneSpeed = rightTrackSpeed;
+		crane.vehicle->applyEngineForce(craneSpeed, i);
+		crane.vehicle->setBrake(brake, i);
+	}
 }
 
 
@@ -308,17 +339,17 @@ void Game::Step(float dt)
 	lightPosition = glm::vec3(20 * cos(lightAngle), 7.0, 20 * sin(lightAngle));
 	lightAngle += dt * 0.5f;
 
-	crane.velocity += crane.acceleration * dt;
-	if (crane.velocity > 15.f) crane.velocity = 15.f;
-	if (crane.velocity < -15.f) crane.velocity = -15.f;
-	crane.velocity *= 0.98f;
+	//crane.velocity += crane.acceleration * dt;
+	//if (crane.velocity > 15.f) crane.velocity = 15.f;
+	//if (crane.velocity < -15.f) crane.velocity = -15.f;
+	//crane.velocity *= 0.98f;
 
-	crane.direction = glm::vec3(
-		sin(crane.yaw),
-		0,
-		cos(crane.yaw));
+	//crane.direction = glm::vec3(
+	//	sin(crane.yaw),
+	//	0,
+	//	cos(crane.yaw));
 
-	crane.position += crane.direction * crane.velocity * dt;
+	//crane.position += crane.direction * crane.velocity * dt;
 
 	crane.timer = glm::length(crane.position)* 5.f;
 }
@@ -353,7 +384,7 @@ void Game::renderScene(std::string shader)
 		resourceManager.getModel("skybox")->render();
 	}
 
-	crane.render(shader);
+	crane.render(shader, viewPhysics);
 }
 
 void Game::beginNormalRender()
@@ -436,6 +467,12 @@ void Game::drawGUI()
 {
 	static bool consoleEnabled = true;
 	static bool simpleTerrain = true;
+	static float m_suspensionStiffness = 10.f;
+	static float m_wheelsDampingRelaxation = 0.2f;
+	static float m_wheelsDampingCompression = 0.2f;;
+	static float m_frictionSlip = 10;
+	static float m_rollInfluence = 0.0f;
+
 	ImGui_SDL2_NewFrame();
 	ImGui::Text("Info");
 	ImGui::Text("FPS: %d", (int)FPS);
@@ -452,7 +489,25 @@ void Game::drawGUI()
 	}
 
 	ImGui::Text("Physics");
+	ImGui::Checkbox("View debug", &viewPhysics);
 	ImGui::Checkbox("Pause", &physicsPaused);
+
+	ImGui::Text("Wheels");
+	ImGui::SliderFloat("m_suspensionStiffness", &m_suspensionStiffness, 0.f, 50.f);
+	ImGui::SliderFloat("m_wheelsDampingRelaxation", &m_wheelsDampingRelaxation, 0.f, 50.f);
+	ImGui::SliderFloat("m_wheelsDampingCompression", &m_wheelsDampingCompression, 0.f, 50.f);
+	ImGui::SliderFloat("m_frictionSlip", &m_frictionSlip, 0.f, 50.f);
+	ImGui::SliderFloat("m_rollInfluence", &m_rollInfluence, 0.f, 50.f);
+
+	for (int i = 0; i < crane.vehicle->getNumWheels(); i++)  {
+		btWheelInfo& wheel = crane.vehicle->getWheelInfo(i);
+		wheel.m_suspensionStiffness = m_suspensionStiffness;
+		wheel.m_wheelsDampingRelaxation = m_wheelsDampingRelaxation;
+		wheel.m_wheelsDampingCompression = m_wheelsDampingCompression;
+		wheel.m_frictionSlip = m_frictionSlip;
+		wheel.m_rollInfluence = m_rollInfluence;
+	}
+
 
 	if (consoleEnabled) {
 		ImGui::Begin("Console");

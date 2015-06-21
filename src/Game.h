@@ -9,7 +9,7 @@
 
 #include "Logger.h"
 #include "resource/ResourceManager.h"
-#include <btBulletDynamicsCommon.h>
+#include "utils/physics.h"
 
 #include "objects\Camera.h"
 #include "objects\Crane.h"
@@ -57,6 +57,7 @@ private:
 
 	// Physics
 	bool physicsPaused = true;
+	bool viewPhysics = true;
 	btDiscreteDynamicsWorld* dynamicsWorld;
 
 	// Objects
@@ -64,7 +65,7 @@ private:
 	Crane crane;
 
 	// Temporary
-	std::string terrainModel = "terrain";
+	std::string terrainModel = "simple_terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 lightPosition;

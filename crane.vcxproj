@@ -26,6 +26,7 @@
     <ClCompile Include="src\resource\shader\Shader.cpp" />
     <ClCompile Include="src\resource\texture\Texture.cpp" />
     <ClCompile Include="src\utils\file.cpp" />
+    <ClCompile Include="src\utils\physics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Game.h" />
@@ -43,6 +44,7 @@
     <ClInclude Include="src\resource\shader\Shader.h" />
     <ClInclude Include="src\resource\texture\Texture.h" />
     <ClInclude Include="src\utils\file.h" />
+    <ClInclude Include="src\utils\physics.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0F4765E0-5FE4-499C-9AB7-5287F5A8B0A9}</ProjectGuid>

@@ -56,6 +56,7 @@ private:
 	glm::vec3 specular = glm::vec3(0.0, 0.0, 0.0);
 
 	// Physics
+	bool renderBricks = true;
 	bool physicsPaused = true;
 	bool viewPhysics = true;
 	btDiscreteDynamicsWorld* dynamicsWorld;

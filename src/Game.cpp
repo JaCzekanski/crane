@@ -88,7 +88,6 @@ void Game::Run()
 {
 	if (!initialized) return;
 	SDL_ShowWindow(mainWindow);
-	focusGained();
 
 	const float TIME_STEP = 1.f / 60.f; // Physics timestep
 
@@ -133,6 +132,7 @@ void Game::initializePhysics()
 	btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 	btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
 	btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+
 	dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
 
 	dynamicsWorld->setGravity(btVector3(0, -10, 0));
@@ -182,7 +182,7 @@ void Game::initializePhysics()
 		btTransform transform;
 		transform.setIdentity();
 
-		for (int y = 0; y < 20; y++)
+		for (int y = 0; y < 15; y++)
 		for (int z = -10; z < 10; z++)
 		{
 			transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
@@ -292,6 +292,11 @@ void Game::Input(float dt)
 	if (leftTrackSpeed == 0 && rightTrackSpeed == 0) brake = 20.f;
 	if (keys[SDL_SCANCODE_SPACE]) brake = 30.f;
 
+	if (keys[SDL_SCANCODE_KP_1])
+		crane.cabin->applyTorque(btVector3(0, 100, 0));
+
+	if (keys[SDL_SCANCODE_KP_2])
+		crane.cabin->applyTorque(btVector3(0, -100, 0));
 
 	for (int i = 0; i < crane.vehicle->getNumWheels(); i++)  {
 		float craneSpeed = 0;
@@ -326,22 +331,24 @@ void Game::Step(float dt)
 void Game::renderScene(std::string shader)
 {
 	auto program = resourceManager.getProgram(shader);
-	resourceManager.getTexture("brick")->use();
-	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size() - 1; i++)
-	{
-		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1 + i];
-		btRigidBody* body = btRigidBody::upcast(obj);
+	if (renderBricks) {
+		resourceManager.getTexture("brick")->use();
+		for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size() - 1; i++)
+		{
+			btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1 + i];
+			btRigidBody* body = btRigidBody::upcast(obj);
 
-		btTransform transform;
-		body->getMotionState()->getWorldTransform(transform);
+			btTransform transform;
+			body->getMotionState()->getWorldTransform(transform);
 
-		glm::mat4 model = glm::mat4(1.0);
-		glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-		model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
-		model = model * glm::mat4_cast(rotation);
+			glm::mat4 model = glm::mat4(1.0);
+			glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+			model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
+			model = model * glm::mat4_cast(rotation);
 
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-		resourceManager.getModel("brick")->render();
+			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+			resourceManager.getModel("brick")->render();
+		}
 	}
 
 	if (shader != shadowmapShader) {
@@ -453,6 +460,7 @@ void Game::drawGUI()
 	}
 
 	ImGui::Text("Physics");
+	ImGui::Checkbox("Render bricks", &renderBricks);
 	ImGui::Checkbox("View debug", &viewPhysics);
 	ImGui::Checkbox("Pause", &physicsPaused);
 

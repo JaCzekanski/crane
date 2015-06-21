@@ -64,11 +64,12 @@ void Crane::renderPhysics()
 	gl::GetIntegerv(gl::POLYGON_MODE, &polygonMode);
 	gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
 
-	// Body
+	// Base
 	{
-		glm::mat4 rot = glm::mat4_cast(rotation);
-		glm::mat4 scale = glm::scale(glm::mat4(1.f), boxSize);
-		glm::mat4 translate = glm::translate(glm::mat4(1.f), position);
+		auto transform = base->getWorldTransform();
+		glm::mat4 rot = glm::mat4_cast(convert(transform.getRotation()));
+		glm::mat4 scale = glm::scale(glm::mat4(1.f), baseSize);
+		glm::mat4 translate = glm::translate(glm::mat4(1.f), convert(transform.getOrigin()));
 		glm::mat4 model = translate * rot *scale;
 
 		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
@@ -76,6 +77,35 @@ void Crane::renderPhysics()
 
 		resourceManager.getModel("cube")->render();
 	}
+
+	// Cabin
+	{
+		auto transform = cabin->getWorldTransform();
+		glm::mat4 rot = glm::mat4_cast(convert(transform.getRotation()));
+		glm::mat4 scale = glm::scale(glm::mat4(1.f), cabinSize);
+		glm::mat4 translate = glm::translate(glm::mat4(1.f), convert(transform.getOrigin()));
+		glm::mat4 model = translate * rot *scale;
+
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getTexture("oslona")->use();
+
+		resourceManager.getModel("cube")->render();
+	}
+
+	// Cabin
+	{
+		auto transform = arm->getWorldTransform();
+		glm::mat4 rot = glm::mat4_cast(convert(transform.getRotation()));
+		glm::mat4 scale = glm::scale(glm::mat4(1.f), armSize);
+		glm::mat4 translate = glm::translate(glm::mat4(1.f), convert(transform.getOrigin()));
+		glm::mat4 model = translate * rot *scale;
+
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getTexture("oslona")->use();
+
+		resourceManager.getModel("cube")->render();
+	}
+
 
 	// Wheels
 	for (int i = 0; i < vehicle->getNumWheels(); i++)
@@ -98,8 +128,8 @@ void Crane::render(std::string shader, bool debug)
 {
 	this->shader = shader;
 
-	position = convert(body->getWorldTransform().getOrigin());
-	rotation = convert(body->getWorldTransform().getRotation());
+	position = convert(base->getWorldTransform().getOrigin());
+	rotation = convert(base->getWorldTransform().getRotation());
 
 	if (debug) renderPhysics();
 
@@ -114,19 +144,60 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 {
 	btVector3 startPosition(0.0, 1.0, 0.0);
 	// Body
-	btCollisionShape* shape = new btBoxShape(btVector3(boxSize.x*0.5, boxSize.y*0.5, boxSize.z*0.5));
+	btCollisionShape* bodyBase = new btBoxShape(btVector3(baseSize.x*0.5, baseSize.y*0.5, baseSize.z*0.5));
 
 	btTransform tr;
+
 	tr.setIdentity();
 	tr.setOrigin(startPosition);
 
-	body = createRigidBody(1000.f, tr, shape);
-	body->setActivationState(DISABLE_DEACTIVATION);
-	world->addRigidBody(body);
+	base = createRigidBody(1000.f, tr, bodyBase);
+	base->setActivationState(DISABLE_DEACTIVATION);
+	world->addRigidBody(base);
+
+	{
+		btCollisionShape* bodyCabin = new btBoxShape(btVector3(cabinSize.x*0.5, cabinSize.y*0.5, cabinSize.z*0.5));
+
+		tr.setIdentity();
+		tr.setOrigin(startPosition + btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5, 0));
+
+		cabin = createRigidBody(100.f, tr, bodyCabin);
+		cabin->setDamping(0, 0.8);
+		world->addRigidBody(cabin);
+
+		btTransform tr1;
+		tr1.setIdentity();
+		tr1.setOrigin(btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5, 0));
+
+		btFixedConstraint* hinge = new btFixedConstraint(*base, *cabin, tr, tr1);
+		//btHinge2Constraint* hinge = new btHinge2Constraint(*base, *cabin, tr.getOrigin(), btVector3(0, 1, 0), btVector3(1, 0, 1));
+		//btGeneric6DofConstraint* hinge = new btGeneric6DofConstraint(*base, *cabin, tr1, tr2, true);
+		//hinge->setLinearLowerLimit(btVector3(0,0,0));
+		//hinge->setLinearUpperLimit(btVector3(0, 0, 0));
+		//cabin->setFriction(50);
+		world->addConstraint(hinge, true);
+	}
+	{
+		btCollisionShape* bodyArm = new btBoxShape(btVector3(armSize.x*0.5, armSize.y*0.5, armSize.z*0.5));
+
+		tr.setIdentity();
+		tr.setRotation(btQuaternion(btVector3(1, 0, 0), glm::radians(-32.f)));
+		tr.setOrigin(startPosition + btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5 + armSize.z * 0.35, armSize.z - 1.0));
+
+		arm = createRigidBody(10.f, tr, bodyArm);
+		world->addRigidBody(arm);
+
+		tr.setOrigin(tr.getOrigin() - 2.0*startPosition);
+		btTransform tr_;
+		tr_.setIdentity();
+
+		btFixedConstraint* hinge = new btFixedConstraint(*cabin, *arm, tr, tr_);
+		world->addConstraint(hinge, true);
+	}
 
 	btRaycastVehicle::btVehicleTuning tuning;
 	btVehicleRaycaster* vehicleRayCaster = new btDefaultVehicleRaycaster(world);
-	vehicle = new btRaycastVehicle(tuning, body, vehicleRayCaster);
+	vehicle = new btRaycastVehicle(tuning, base, vehicleRayCaster);
 
 	world->addVehicle(vehicle);
 

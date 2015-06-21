@@ -9,7 +9,9 @@ class Crane
 	void renderPhysics();
 
 	float wheelRadius = 0.5f;
-	glm::vec3 boxSize = glm::vec3(1.1f, 0.5f, 2.0f);
+	glm::vec3 baseSize = glm::vec3(1.1f, 0.7f, 2.0f);
+	glm::vec3 cabinSize = glm::vec3(2.0f, 1.0f, 3.5f);
+	glm::vec3 armSize = glm::vec3(0.4f, 0.4f, 5.0f);
 	std::string shader;
 public:
 	std::string model = "crane";
@@ -20,7 +22,9 @@ public:
 	float velocity, acceleration;
 	float yaw;
 	float timer;
-	btRigidBody* body;
+	btRigidBody* base;
+	btRigidBody* cabin;
+	btRigidBody* arm;
 	btRigidBody* wheels[8];
 	btHinge2Constraint* hinges[8];
 	btRaycastVehicle* vehicle;

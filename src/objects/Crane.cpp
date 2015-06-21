@@ -7,17 +7,14 @@
 void Crane::renderBody()
 {
 	auto program = resourceManager.getProgram(shader);
-
-	glm::mat4 craneMatrix = glm::mat4(1.0);
-	craneMatrix = glm::translate(craneMatrix, convert(base->getWorldTransform().getOrigin()));
-	craneMatrix = craneMatrix * glm::mat4_cast(convert(base->getWorldTransform().getRotation()));
-	//craneMatrix = glm::rotate(craneMatrix, yaw, glm::vec3(0, 1, 0));
-
+	
 	for (auto obj : resourceManager.getModel(model)->objects)
 	{
-		glm::mat4 model = craneMatrix;
+		glm::mat4 _model = glm::translate(glm::mat4(1.f), convert(base->getWorldTransform().getOrigin()));
+		if (obj.first == "Naped_Cylinder") _model = _model * glm::mat4_cast(convert(base->getWorldTransform().getRotation()));
+		else _model = _model * glm::mat4_cast(convert(cabin->getWorldTransform().getRotation()));
 
-		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(_model));
 		if (!obj.second->material.texture.empty())
 			resourceManager.getTexture(obj.second->material.texture)->use();
 
@@ -47,10 +44,9 @@ void Crane::renderTracks()
 {
 	auto program = resourceManager.getProgram(shader);
 
-	glm::mat4 craneMatrix = glm::mat4(1.0);
-	craneMatrix = glm::translate(craneMatrix, convert(base->getWorldTransform().getOrigin()));
-	craneMatrix = craneMatrix * glm::mat4_cast(convert(base->getWorldTransform().getRotation()));
-	//craneMatrix = glm::rotate(craneMatrix, yaw, glm::vec3(0, 1, 0));
+	glm::mat4 rot = glm::mat4_cast(convert(base->getWorldTransform().getRotation()));
+	glm::mat4 translate = glm::translate(glm::mat4(1.f), convert(base->getWorldTransform().getOrigin()));
+	glm::mat4 craneMatrix = translate * rot;
 
 	resourceManager.getTexture(trackTexture)->use();
 
@@ -183,13 +179,17 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 		tr1.setIdentity();
 		tr1.setOrigin(btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5, 0));
 
-		btFixedConstraint* hinge = new btFixedConstraint(*base, *cabin, tr, tr1);
-		//btHinge2Constraint* hinge = new btHinge2Constraint(*base, *cabin, tr.getOrigin(), btVector3(0, 1, 0), btVector3(1, 0, 1));
-		//btGeneric6DofConstraint* hinge = new btGeneric6DofConstraint(*base, *cabin, tr1, tr2, true);
-		//hinge->setLinearLowerLimit(btVector3(0,0,0));
-		//hinge->setLinearUpperLimit(btVector3(0, 0, 0));
-		//cabin->setFriction(50);
-		world->addConstraint(hinge, true);
+		//btFixedConstraint* hinge = new btFixedConstraint(*base, *cabin, tr, tr1);
+		btHinge2Constraint* hinge = new btHinge2Constraint(*base, *cabin, tr.getOrigin(), btVector3(0, 0, 1), btVector3(0, 1, 0));
+		//btGeneric6DofConstraint* hinge = new btGeneric6DofConstraint(*base, *cabin, tr, tr1, true);
+		hinge->setLinearLowerLimit(btVector3(0,0,0));
+		hinge->setLinearUpperLimit(btVector3(0, 0, 0));
+		//hinge->setLimit(3, 0, 0);
+		////hinge->setLimit(4, -SIMD_PI, SIMD_PI);
+		//hinge->setLimit(5, 0, 0);
+		//cabin->setAngularFactor(btVector3(0, 1, 0));
+		cabin->setFriction(50);
+		world->addConstraint(hinge, false);
 	}
 	{
 		btCollisionShape* bodyArm = new btBoxShape(btVector3(armSize.x*0.5, armSize.y*0.5, armSize.z*0.5));
@@ -207,19 +207,13 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 
 		btFixedConstraint* hinge = new btFixedConstraint(*cabin, *arm, tr, tr_);
 		world->addConstraint(hinge, true);
-
-
-		tr.setIdentity();
-		tr.setRotation(btQuaternion(btVector3(1, 0, 0), glm::radians(-345.f)));
-		tr.setOrigin(startPosition + btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5 + armSize.z * 0.35, armSize.z - 1.0));
-		arm->setWorldTransform(tr);
 	}
 	{
 		btCollisionShape* bodyBall = new btSphereShape(ballRadius);
 
 		tr.setIdentity();
 		tr.setOrigin(startPosition + btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5 , armSize.z * 1.1));
-		ball = createRigidBody(25.f, tr, bodyBall);
+		ball = createRigidBody(10.f, tr, bodyBall);
 		world->addRigidBody(ball);
 
 		btPoint2PointConstraint* hinge = new btPoint2PointConstraint(*arm, *ball, btVector3(0, 0, armSize.z*0.5), btVector3(0, 3.0, 0));

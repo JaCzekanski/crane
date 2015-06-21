@@ -56,7 +56,6 @@ private:
 	glm::vec3 specular = glm::vec3(0.0, 0.0, 0.0);
 
 	// Physics
-	bool renderBricks = true;
 	bool physicsPaused = false;
 	bool viewPhysics = false;
 	btDiscreteDynamicsWorld* dynamicsWorld;
@@ -67,7 +66,9 @@ private:
 	std::vector<btRigidBody*> wall;
 
 	// Temporary
-	std::string terrainModel = "simple_terrain";
+	bool consoleEnabled = true;
+	bool showHelp = true;
+	std::string terrainModel = "terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 lightPosition;

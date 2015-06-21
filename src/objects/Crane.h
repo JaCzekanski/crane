@@ -9,7 +9,7 @@ class Crane
 	void renderPhysics();
 
 	float wheelRadius = 0.5f;
-	glm::vec3 baseSize = glm::vec3(1.1f, 0.7f, 2.0f);
+	glm::vec3 baseSize = glm::vec3(1.1f, 0.8f, 2.0f);
 	glm::vec3 cabinSize = glm::vec3(2.0f, 1.0f, 3.5f);
 	glm::vec3 armSize = glm::vec3(0.4f, 0.4f, 5.0f);
 	float ballRadius = 0.5f;

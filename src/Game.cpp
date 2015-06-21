@@ -139,58 +139,54 @@ void Game::initializePhysics()
 
 	btAlignedObjectArray<btCollisionShape*> collisionShapes;
 
+	for (auto obj : resourceManager.getModel(terrainModel)->objects)
 	{
-		for (auto obj : resourceManager.getModel(terrainModel)->objects)
+		btTriangleMesh *mesh = new btTriangleMesh();
+		for (auto it = obj.second->data.begin(); it != obj.second->data.end(); it += 3)
 		{
-			btTriangleMesh *mesh = new btTriangleMesh();
-			for (auto it = obj.second->data.begin(); it != obj.second->data.end(); it += 3)
+			glm::vec3 v_[3];
+			btVector3 v[3];
+			v_[0] = (*it).position;
+			v_[1] = (*(it + 1)).position;
+			v_[2] = (*(it + 2)).position;
+
+			for (int j = 0; j < 3; j++)
 			{
-				glm::vec3 v_[3];
-				btVector3 v[3];
-				v_[0] = (*it).position;
-				v_[1] = (*(it + 1)).position;
-				v_[2] = (*(it + 2)).position;
-
-				for (int j = 0; j < 3; j++)
-				{
-					v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
-				}
-
-				mesh->addTriangle(v[0], v[1], v[2]);
+				v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
 			}
 
-			btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
-
-			collisionShapes.push_back(ground);
-
-			btTransform tr;
-			tr.setIdentity();
-			btRigidBody* body = createRigidBody(0, tr, ground);
-			dynamicsWorld->addRigidBody(body);
+			mesh->addTriangle(v[0], v[1], v[2]);
 		}
+
+		btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
+
+		collisionShapes.push_back(ground);
+
+		btTransform tr;
+		tr.setIdentity();
+		btRigidBody* body = createRigidBody(0, tr, ground);
+		dynamicsWorld->addRigidBody(body);
 	}
 
+	const float xScale = 0.5f;
+	const float yScale = 0.5f;
+	const float zScale = 1.2f;
+
+	btCollisionShape* brick = new btBoxShape(btVector3(xScale* 0.5f, yScale* 0.5f, zScale* 0.5f));
+
+	collisionShapes.push_back(brick);
+
+	btTransform transform;
+	transform.setIdentity();
+
+	for (int y = 0; y < 15; y++)
+	for (int z = -10; z < 10; z++)
 	{
-		const float xScale = 0.5f;
-		const float yScale = 0.5f;
-		const float zScale = 1.2f;
-
-		btCollisionShape* brick = new btBoxShape(btVector3(xScale* 0.5f, yScale* 0.5f, zScale* 0.5f));
-
-		collisionShapes.push_back(brick);
-
-		btTransform transform;
-		transform.setIdentity();
-
-		for (int y = 0; y < 15; y++)
-		for (int z = -10; z < 10; z++)
-		{
-			transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
-			auto body = createRigidBody(.01f, transform, brick);
-			body->setRestitution(0.0);
-			dynamicsWorld->addRigidBody(body);
-			wall.push_back(body);
-		}
+		transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
+		auto body = createRigidBody(.01f, transform, brick);
+		body->setRestitution(0.0);
+		dynamicsWorld->addRigidBody(body);
+		wall.push_back(body);
 	}
 }
 
@@ -276,6 +272,8 @@ void Game::Input(float dt)
 	if (keys[SDL_SCANCODE_Z])
 		camera.position.y -= dt * speed;
 
+
+
 	float leftTrackSpeed = 0;
 	float rightTrackSpeed = 0;
 	float brake = 10.f;
@@ -290,13 +288,18 @@ void Game::Input(float dt)
 		leftTrackSpeed -= 700.f;
 	}
 	if (leftTrackSpeed == 0 && rightTrackSpeed == 0) brake = 20.f;
+	
 	if (keys[SDL_SCANCODE_SPACE]) brake = 30.f;
 
-	if (keys[SDL_SCANCODE_KP_1])
-		crane.cabin->applyTorque(btVector3(0, 100, 0));
-
-	if (keys[SDL_SCANCODE_KP_2])
-		crane.cabin->applyTorque(btVector3(0, -100, 0));
+	if (keys[SDL_SCANCODE_X]) {
+		crane.cabin->setFriction(0);
+		crane.cabin->applyTorque(btVector3(0, 1000, 0));
+	}
+	else if (keys[SDL_SCANCODE_C]) {
+		crane.cabin->setFriction(0);
+		crane.cabin->applyTorque(btVector3(0, -1000, 0));
+	}
+	else crane.cabin->setFriction(50);
 
 	for (int i = 0; i < crane.vehicle->getNumWheels(); i++)  {
 		float craneSpeed = 0;
@@ -317,21 +320,19 @@ void Game::Step(float dt)
 void Game::renderScene(std::string shader)
 {
 	auto program = resourceManager.getProgram(shader);
-	if (renderBricks) {
-		resourceManager.getTexture("brick")->use();
-		for (auto brick : wall)
-		{
-			btTransform transform;
-			brick->getMotionState()->getWorldTransform(transform);
+	resourceManager.getTexture("brick")->use();
+	for (auto brick : wall)
+	{
+		btTransform transform;
+		brick->getMotionState()->getWorldTransform(transform);
 
-			glm::mat4 model = glm::mat4(1.0);
-			glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-			model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
-			model = model * glm::mat4_cast(rotation);
+		glm::mat4 model = glm::mat4(1.0);
+		glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+		model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
+		model = model * glm::mat4_cast(rotation);
 
-			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-			resourceManager.getModel("brick")->render();
-		}
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getModel("brick")->render();
 	}
 
 	if (shader != shadowmapShader) {
@@ -412,6 +413,25 @@ void Game::beginShadowmapRender()
 
 void Game::Render()
 {
+	if (!isWindowFocused) // 3rd person camera
+	{
+		auto dir = convert(crane.base->getWorldTransform().getRotation());
+
+		camera.yaw = glm::yaw(dir);
+		camera.pitch = 0;
+
+		camera.direction = glm::vec3(
+			cos(camera.pitch) * sin(camera.yaw),
+			sin(camera.pitch),
+			cos(camera.pitch) * cos(camera.yaw));
+
+		camera.position = convert(crane.base->getWorldTransform().getOrigin());
+		camera.position -= camera.direction*10.f;
+		camera.position.y += 6.f;
+
+		camera.pitch = glm::radians(-15.f);
+	}
+
 	beginShadowmapRender();
 	renderScene(shadowmapShader);
 
@@ -424,31 +444,10 @@ void Game::Render()
 
 void Game::drawGUI()
 {
-	static bool consoleEnabled = true;
-	static bool simpleTerrain = true;
-
 	ImGui_SDL2_NewFrame();
-	ImGui::Text("Info");
-	ImGui::Text("FPS: %d", (int)FPS);
-
-	ImGui::Text("Options");
-	ImGui::Checkbox("Console", &consoleEnabled);
-	ImGui::Checkbox("Wireframe mode", &wireframe);
-	ImGui::SliderAngle("FOV", &fov, 45, 120);
-
-	if (ImGui::Checkbox("Simple terrain", &simpleTerrain))
-	{
-		if (simpleTerrain) terrainModel = "simple_terrain";
-		else terrainModel = "terrain";
-	}
-
-	ImGui::Text("Physics");
-	ImGui::Checkbox("Render bricks", &renderBricks);
-	ImGui::Checkbox("View debug", &viewPhysics);
-	ImGui::Checkbox("Pause", &physicsPaused);
 
 	if (consoleEnabled) {
-		ImGui::Begin("Console");
+		ImGui::Begin("Konsola");
 		for (auto m : logger.getMessages()) {
 			ImVec4 colors[] = {
 				{ 1.0f, 1.0f, 1.0f, 1.0f }, //LOG_INFO = 0,
@@ -462,6 +461,43 @@ void Game::drawGUI()
 		}
 		ImGui::End();
 	}
+
+	ImGui::Begin("Opcje");
+	ImGui::Text("Info");
+	ImGui::Text("FPS: %d", (int)FPS);
+
+	ImGui::Text("Opcje");
+	ImGui::Checkbox("Pokaz pomoc", &showHelp);
+	ImGui::Checkbox("Konsola", &consoleEnabled);
+	ImGui::Checkbox("Tryb wireframe", &wireframe);
+	ImGui::SliderAngle("FOV", &fov, 45, 120);
+	
+	ImGui::Text("Fizyka");
+	ImGui::Checkbox("Pauza", &physicsPaused);
+	ImGui::Checkbox("Tryb debug", &viewPhysics);
+	ImGui::End();
+
+	if (showHelp) {
+		ImGui::Begin("Pomoc", &showHelp);
+		ImGui::Text(
+			"Projekt na przedmiot \"Grafika komputerowa\" 2015\n"
+			"Autorzy:\n"
+			"Jakub Czekanski\n"
+			"Sylwester Czmil\n\n"
+
+			"Poruszanie:\n"
+			"GORA, DOL - jedz do przodu, tylu\n"
+			"LEWO, PRAWO - obrot w lewo, w prawo\n"
+			"X - obrot platformy w lewo\n"
+			"C - obrot platformy w prawo\n"
+			"W S A D Q Z - poruszanie kamera\n\n"
+			"Kliknij myszka 2x aby obracac kamera\n"
+			"Esc aby uwolnic myszke\n"
+			"2x esc aby zamknac program\n"
+			"H - zamknij pomoc\n");
+		ImGui::End();
+	}
+
 	ImGui::Render();
 }
 
@@ -473,6 +509,9 @@ void Game::keyDown(SDL_Keycode key)
 		if (isWindowFocused) focusLost();
 		else gameState = State::Quit;
 	}
+	if (key == SDLK_KP_2) crane.base->applyImpulse(btVector3(0, 7500, 0), btVector3(0, 0, 0));
+	if (key == SDLK_KP_4) crane.base->applyTorqueImpulse(btVector3(0, 0, 5000));
+	if (key == SDLK_h) showHelp = !showHelp;
 }
 
 void Game::keyUp(SDL_Keycode key)

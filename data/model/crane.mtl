@@ -2,9 +2,9 @@
 # Material Count: 10
 
 newmtl Material.001
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -12,9 +12,9 @@ illum 2
 map_Kd C:\Users\Sferis\desktop\model\uv\podwozie.png
 
 newmtl Material.002
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.471579 0.471579 0.471579
+Kd 0.377263 0.377263 0.377263
 Ks 0.270677 0.270677 0.270677
 Ni 1.000000
 d 1.000000
@@ -22,9 +22,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\kabina.png
 
 newmtl Material.002_kabina.png
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.471579 0.471579 0.471579
+Kd 0.377263 0.377263 0.377263
 Ks 0.270677 0.270677 0.270677
 Ni 1.000000
 d 1.000000
@@ -32,9 +32,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\kabina.png
 
 newmtl Material.003
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -42,9 +42,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\oslona.png
 
 newmtl Material.005
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -52,9 +52,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\ramiepion.png
 
 newmtl Material.005_rameienosne.png
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -62,9 +62,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\rameienosne.png
 
 newmtl Material.008
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -72,9 +72,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\ramiepodstawa.png
 
 newmtl Material.009
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -82,9 +82,9 @@ illum 2
 map_Kd C:\Users\Sferis\Desktop\model\uv\kabina.png
 
 newmtl Material_kabina.png
-Ns 90.196078
+Ns 86.274510
 Ka 0.000000 0.000000 0.000000
-Kd 0.409600 0.409600 0.409600
+Kd 0.327680 0.327680 0.327680
 Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
@@ -94,7 +94,7 @@ map_Kd C:\Users\Sferis\Desktop\model\uv\kabina.png
 newmtl None
 Ns 0.000000
 Ka 0.000000 0.000000 0.000000
-Kd 0.512000 0.512000 0.512000
+Kd 0.409600 0.409600 0.409600
 Ks 0.800000 0.800000 0.800000
 Ni 1.000000
 d 1.000000

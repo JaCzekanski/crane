@@ -188,8 +188,8 @@ void Game::initializePhysics()
 			transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
 			auto body = createRigidBody(.01f, transform, brick);
 			body->setRestitution(0.0);
-
 			dynamicsWorld->addRigidBody(body);
+			wall.push_back(body);
 		}
 	}
 }
@@ -312,20 +312,6 @@ void Game::Step(float dt)
 {
 	if (!physicsPaused) dynamicsWorld->stepSimulation(dt);
 	lightPosition = glm::vec3(20 * cos(lightAngle), 7.0, 20 * sin(lightAngle));
-
-	//crane.velocity += crane.acceleration * dt;
-	//if (crane.velocity > 15.f) crane.velocity = 15.f;
-	//if (crane.velocity < -15.f) crane.velocity = -15.f;
-	//crane.velocity *= 0.98f;
-
-	//crane.direction = glm::vec3(
-	//	sin(crane.yaw),
-	//	0,
-	//	cos(crane.yaw));
-
-	//crane.position += crane.direction * crane.velocity * dt;
-
-	crane.timer = glm::length(crane.position)* 5.f;
 }
 
 void Game::renderScene(std::string shader)
@@ -333,13 +319,10 @@ void Game::renderScene(std::string shader)
 	auto program = resourceManager.getProgram(shader);
 	if (renderBricks) {
 		resourceManager.getTexture("brick")->use();
-		for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size() - 1; i++)
+		for (auto brick : wall)
 		{
-			btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1 + i];
-			btRigidBody* body = btRigidBody::upcast(obj);
-
 			btTransform transform;
-			body->getMotionState()->getWorldTransform(transform);
+			brick->getMotionState()->getWorldTransform(transform);
 
 			glm::mat4 model = glm::mat4(1.0);
 			glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());

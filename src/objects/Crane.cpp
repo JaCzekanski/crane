@@ -9,8 +9,8 @@ void Crane::renderBody()
 	auto program = resourceManager.getProgram(shader);
 
 	glm::mat4 craneMatrix = glm::mat4(1.0);
-	craneMatrix = glm::translate(craneMatrix, position);
-	craneMatrix = craneMatrix * glm::mat4_cast(rotation);
+	craneMatrix = glm::translate(craneMatrix, convert(base->getWorldTransform().getOrigin()));
+	craneMatrix = craneMatrix * glm::mat4_cast(convert(base->getWorldTransform().getRotation()));
 	//craneMatrix = glm::rotate(craneMatrix, yaw, glm::vec3(0, 1, 0));
 
 	for (auto obj : resourceManager.getModel(model)->objects)
@@ -27,27 +27,47 @@ void Crane::renderBody()
 
 		obj.second->render();
 	}
+
+
+	// Ball
+	{
+		auto transform = ball->getWorldTransform();
+		glm::mat4 rot = glm::mat4_cast(convert(transform.getRotation()));
+		glm::mat4 scale = glm::scale(glm::mat4(1.f), glm::vec3(ballRadius*2));
+		glm::mat4 translate = glm::translate(glm::mat4(1.f), convert(transform.getOrigin()));
+		glm::mat4 model = translate * rot *scale;
+
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getTexture("ball")->use();
+
+		resourceManager.getModel("ball")->render();
+	}
 }
 void Crane::renderTracks()
 {
 	auto program = resourceManager.getProgram(shader);
 
 	glm::mat4 craneMatrix = glm::mat4(1.0);
-	craneMatrix = glm::translate(craneMatrix, position);
-	craneMatrix = craneMatrix * glm::mat4_cast(rotation);
+	craneMatrix = glm::translate(craneMatrix, convert(base->getWorldTransform().getOrigin()));
+	craneMatrix = craneMatrix * glm::mat4_cast(convert(base->getWorldTransform().getRotation()));
 	//craneMatrix = glm::rotate(craneMatrix, yaw, glm::vec3(0, 1, 0));
 
 	resourceManager.getTexture(trackTexture)->use();
 
 	for (auto obj : resourceManager.getModel(model)->objects)
 	{
-		if (obj.first != "GosienicePraweSzlak_BezierCircle.001" &&
-			obj.first != "GasieniceLeweSzlak_BezierCircle") continue;
+		bool right = false, left = false;
+		if (obj.first == "GosienicePraweSzlak_BezierCircle.001") right = true;
+		if (obj.first == "GasieniceLeweSzlak_BezierCircle") left = true;
+		if (!right && !left) continue;
 
 		for (auto segment : obj.second->segments)
 		{
 			glm::mat4 model = craneMatrix;
-			model = glm::translate(craneMatrix, segment.getPosition(1.f - timer));
+			float rot = 0;
+			if (left) rot = vehicle->getWheelInfo(4).m_rotation;
+			if (right) rot = vehicle->getWheelInfo(0).m_rotation;
+			model = glm::translate(craneMatrix, segment.getPosition(1.f - rot));
 			model = glm::rotate(model, segment.getAngle() - glm::radians(90.f), glm::vec3(1, 0, 0));
 
 			gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
@@ -92,7 +112,7 @@ void Crane::renderPhysics()
 		resourceManager.getModel("cube")->render();
 	}
 
-	// Cabin
+	// Arm
 	{
 		auto transform = arm->getWorldTransform();
 		glm::mat4 rot = glm::mat4_cast(convert(transform.getRotation()));
@@ -127,13 +147,7 @@ void Crane::renderPhysics()
 void Crane::render(std::string shader, bool debug)
 {
 	this->shader = shader;
-
-	position = convert(base->getWorldTransform().getOrigin());
-	rotation = convert(base->getWorldTransform().getRotation());
-
 	if (debug) renderPhysics();
-
-	position += glm::vec3(0.0, -0.4, 0.0);
 
 	renderBody();
 	renderTracks();
@@ -193,6 +207,23 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 
 		btFixedConstraint* hinge = new btFixedConstraint(*cabin, *arm, tr, tr_);
 		world->addConstraint(hinge, true);
+
+
+		tr.setIdentity();
+		tr.setRotation(btQuaternion(btVector3(1, 0, 0), glm::radians(-345.f)));
+		tr.setOrigin(startPosition + btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5 + armSize.z * 0.35, armSize.z - 1.0));
+		arm->setWorldTransform(tr);
+	}
+	{
+		btCollisionShape* bodyBall = new btSphereShape(ballRadius);
+
+		tr.setIdentity();
+		tr.setOrigin(startPosition + btVector3(0, cabinSize.y*0.5 + baseSize.y*0.5 , armSize.z * 1.1));
+		ball = createRigidBody(25.f, tr, bodyBall);
+		world->addRigidBody(ball);
+
+		btPoint2PointConstraint* hinge = new btPoint2PointConstraint(*arm, *ball, btVector3(0, 0, armSize.z*0.5), btVector3(0, 3.0, 0));
+		world->addConstraint(hinge, false);
 	}
 
 	btRaycastVehicle::btVehicleTuning tuning;

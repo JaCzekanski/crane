@@ -57,13 +57,14 @@ private:
 
 	// Physics
 	bool renderBricks = true;
-	bool physicsPaused = true;
-	bool viewPhysics = true;
+	bool physicsPaused = false;
+	bool viewPhysics = false;
 	btDiscreteDynamicsWorld* dynamicsWorld;
 
 	// Objects
 	Camera camera;
 	Crane crane;
+	std::vector<btRigidBody*> wall;
 
 	// Temporary
 	std::string terrainModel = "simple_terrain";

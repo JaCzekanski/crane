@@ -139,7 +139,7 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 	for (int i = 0; i < 8; i++)
 	{
 		btVector3 connectionPoint = btVector3(
-			i<4 ? -1.2 : 1.2, 
+			i<4 ? -1.0 : 1.0, 
 			0.5, 
 			(-2.4*wheelRadius) + ((i % 4)*(wheelRadius*1.6)));
 
@@ -152,7 +152,8 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 		btWheelInfo& wheel = vehicle->getWheelInfo(i);
 		wheel.m_suspensionStiffness = 15.f;
 		wheel.m_wheelsDampingRelaxation = 0.2f;
-		wheel.m_wheelsDampingCompression = 0.2f;;
+		wheel.m_wheelsDampingCompression = 0.2f;
+		wheel.m_maxSuspensionTravelCm = 10;
 		wheel.m_frictionSlip = 10;
 		wheel.m_rollInfluence = 0.0f;
 	}

@@ -65,7 +65,7 @@ private:
 	Crane crane;
 
 	// Temporary
-	std::string terrainModel = "terrain";
+	std::string terrainModel = "simple_terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 lightPosition;

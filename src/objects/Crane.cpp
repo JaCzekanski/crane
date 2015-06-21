@@ -112,7 +112,7 @@ void Crane::render(std::string shader, bool debug)
 
 void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 {
-	btVector3 startPosition(0.0, 4.0, 0.0);
+	btVector3 startPosition(0.0, 1.0, 0.0);
 	// Body
 	btCollisionShape* shape = new btBoxShape(btVector3(boxSize.x*0.5, boxSize.y*0.5, boxSize.z*0.5));
 
@@ -150,9 +150,9 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 				wheelRadius, tuning, false);
 
 		btWheelInfo& wheel = vehicle->getWheelInfo(i);
-		wheel.m_suspensionStiffness = 15.f;
-		wheel.m_wheelsDampingRelaxation = 0.2f;
-		wheel.m_wheelsDampingCompression = 0.2f;
+		wheel.m_suspensionStiffness = 25.f;
+		wheel.m_wheelsDampingRelaxation = 1.5f;
+		wheel.m_wheelsDampingCompression = 1.5f;
 		wheel.m_maxSuspensionTravelCm = 10;
 		wheel.m_frictionSlip = 10;
 		wheel.m_rollInfluence = 0.0f;

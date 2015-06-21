@@ -75,7 +75,7 @@ Game::Game()
 }
 
 
-Game::~Game() 
+Game::~Game()
 {
 	// TODO: No opengl cleaning
 	SDL_GL_DeleteContext(glcontext);
@@ -84,7 +84,7 @@ Game::~Game()
 }
 
 
-void Game::Run() 
+void Game::Run()
 {
 	if (!initialized) return;
 	SDL_ShowWindow(mainWindow);
@@ -93,7 +93,7 @@ void Game::Run()
 	const float TIME_STEP = 1.f / 60.f; // Physics timestep
 
 	float dt = 0.0f;
-	float lastUpdate = ((float)SDL_GetTicks())/1000.0f;
+	float lastUpdate = ((float)SDL_GetTicks()) / 1000.0f;
 	float accumulator = 0.0f;
 	float frames = 0;
 	float fpsTime = 0;
@@ -140,85 +140,58 @@ void Game::initializePhysics()
 	btAlignedObjectArray<btCollisionShape*> collisionShapes;
 
 	{
-		btTriangleMesh *mesh = new btTriangleMesh();
-
-		auto model = resourceManager.getModel(terrainModel)->objects.begin()->second;
-		for (auto it = model->data.begin(); it != model->data.end(); it += 3)
+		for (auto obj : resourceManager.getModel(terrainModel)->objects)
 		{
-			glm::vec3 v_[3];
-			btVector3 v[3];
-			v_[0] = (*it).position;
-			v_[1] = (*(it + 1)).position;
-			v_[2] = (*(it + 2)).position;
-
-			for (int j = 0; j < 3; j++)
+			btTriangleMesh *mesh = new btTriangleMesh();
+			for (auto it = obj.second->data.begin(); it != obj.second->data.end(); it += 3)
 			{
-				v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
+				glm::vec3 v_[3];
+				btVector3 v[3];
+				v_[0] = (*it).position;
+				v_[1] = (*(it + 1)).position;
+				v_[2] = (*(it + 2)).position;
+
+				for (int j = 0; j < 3; j++)
+				{
+					v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
+				}
+
+				mesh->addTriangle(v[0], v[1], v[2]);
 			}
 
-			mesh->addTriangle(v[0], v[1], v[2]);
+			btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
+
+			collisionShapes.push_back(ground);
+
+			btTransform tr;
+			tr.setIdentity();
+			btRigidBody* body = createRigidBody(0, tr, ground);
+			dynamicsWorld->addRigidBody(body);
 		}
-
-		btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
-
-		collisionShapes.push_back(ground);
-
-		btTransform tr;
-		tr.setIdentity();
-		btRigidBody* body = createRigidBody(0, tr, ground);
-		dynamicsWorld->addRigidBody(body);
 	}
 
-	//{
-	//	//btTriangleMesh *mesh = new btTriangleMesh();
+	{
+		const float xScale = 0.5f;
+		const float yScale = 0.5f;
+		const float zScale = 1.2f;
 
-	//	//auto model = resourceManager.getModel("cube");
-	//	//for (auto it = model->data.begin(); it != model->data.end(); it+=3)
-	//	//{
-	//	//	glm::vec3 v_[3];
-	//	//	btVector3 v[3];
-	//	//	v_[0] = (*it).position;
-	//	//	v_[1] = (*(it+1)).position;
-	//	//	v_[2] = (*(it+2)).position;
+		btCollisionShape* brick = new btBoxShape(btVector3(xScale* 0.5f, yScale* 0.5f, zScale* 0.5f));
 
-	//	//	for (int j = 0; j < 3; j++)
-	//	//	{
-	//	//		v[j] = btVector3(v_[j].x, v_[j].y, v_[j].z);
-	//	//	}
+		collisionShapes.push_back(brick);
 
-	//	//	mesh->addTriangle(v[0], v[1], v[2]);
-	//	//}		
-	//	//
-	//	//btCollisionShape* shape = new btBvhTriangleMeshShape(mesh, true);//new btBoxShape(btVector3(0.5, 1, 0.5));
-	//	btCollisionShape* shape = new btBoxShape(btVector3(0.5, 1, 0.5));
-	//	collisionShapes.push_back(shape);
+		btTransform transform;
+		transform.setIdentity();
 
-	//	btTransform startTransform;
-	//	startTransform.setIdentity();
+		for (int y = 0; y < 20; y++)
+		for (int z = -10; z < 10; z++)
+		{
+			transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
+			auto body = createRigidBody(.01f, transform, brick);
+			body->setRestitution(0.0);
 
-	//	btScalar mass(1.f);
-
-	//	bool isDynamic = (mass != 0.f);
-
-	//	btVector3 localInertia(0, 0, 0);
-	//	if (isDynamic) shape->calculateLocalInertia(mass, localInertia);
-
-	//	for (int i = 0; i < 50; i++)
-	//	{
-	//		if (i == 0)
-	//			startTransform.setOrigin(btVector3(0., 50.0, 0.));
-	//		else
-	//			startTransform.setOrigin(btVector3(cos((float)i)*5.0f, 150.0f + i*7.0f / sqrt((float)i), sin((float)i)*5.0f));
-	//		btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
-	//		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
-	//		btRigidBody* body = new btRigidBody(rbInfo);
-	//		body->setCenterOfMassTransform(startTransform);
-	//		body->setRestitution(0.75);
-
-	//		dynamicsWorld->addRigidBody(body);
-	//	}
-
-	//}
+			dynamicsWorld->addRigidBody(body);
+		}
+	}
 }
 
 void Game::createShadowmap()
@@ -303,24 +276,21 @@ void Game::Input(float dt)
 	if (keys[SDL_SCANCODE_Z])
 		camera.position.y -= dt * speed;
 
-	//if (keys[SDL_SCANCODE_UP]) crane.acceleration = 6.f;
-	//else if (keys[SDL_SCANCODE_DOWN]) crane.acceleration = -6.f;
-	//else crane.acceleration = 0;
-
 	float leftTrackSpeed = 0;
 	float rightTrackSpeed = 0;
-	float brake = 0;
-	if (keys[SDL_SCANCODE_UP]) leftTrackSpeed = rightTrackSpeed = 100.f;
-	if (keys[SDL_SCANCODE_DOWN]) leftTrackSpeed = rightTrackSpeed = -100.f;
+	float brake = 10.f;
+	if (keys[SDL_SCANCODE_UP]) leftTrackSpeed = rightTrackSpeed = 750.f;
+	if (keys[SDL_SCANCODE_DOWN]) leftTrackSpeed = rightTrackSpeed = -750.f;
 	if (keys[SDL_SCANCODE_LEFT]) {
-		leftTrackSpeed += 75.f;
-		rightTrackSpeed -= 75.f;
+		leftTrackSpeed += 700.f;
+		rightTrackSpeed -= 700.f;
 	}
 	if (keys[SDL_SCANCODE_RIGHT]) {
-		rightTrackSpeed += 75.f;
-		leftTrackSpeed -= 75.f;
+		rightTrackSpeed += 700.f;
+		leftTrackSpeed -= 700.f;
 	}
-	if (keys[SDL_SCANCODE_SPACE]) brake = 1.f;
+	if (leftTrackSpeed == 0 && rightTrackSpeed == 0) brake = 20.f;
+	if (keys[SDL_SCANCODE_SPACE]) brake = 30.f;
 
 
 	for (int i = 0; i < crane.vehicle->getNumWheels(); i++)  {
@@ -337,7 +307,6 @@ void Game::Step(float dt)
 {
 	if (!physicsPaused) dynamicsWorld->stepSimulation(dt);
 	lightPosition = glm::vec3(20 * cos(lightAngle), 7.0, 20 * sin(lightAngle));
-	lightAngle += dt * 0.5f;
 
 	//crane.velocity += crane.acceleration * dt;
 	//if (crane.velocity > 15.f) crane.velocity = 15.f;
@@ -357,23 +326,23 @@ void Game::Step(float dt)
 void Game::renderScene(std::string shader)
 {
 	auto program = resourceManager.getProgram(shader);
-	//resourceManager.getTexture("bunny")->use();
-	//for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size() - 1; i++)
-	//{
-	//	btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1 + i];
-	//	btRigidBody* body = btRigidBody::upcast(obj);
+	resourceManager.getTexture("brick")->use();
+	for (int i = 0; i < dynamicsWorld->getCollisionObjectArray().size() - 1; i++)
+	{
+		btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[1 + i];
+		btRigidBody* body = btRigidBody::upcast(obj);
 
-	//	btTransform transform;
-	//	body->getMotionState()->getWorldTransform(transform);
+		btTransform transform;
+		body->getMotionState()->getWorldTransform(transform);
 
-	//	glm::mat4 model = glm::mat4(1.0);
-	//	glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-	//	model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
-	//	model = model * glm::mat4_cast(rotation);
+		glm::mat4 model = glm::mat4(1.0);
+		glm::quat rotation(transform.getRotation().w(), transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+		model = glm::translate(model, glm::vec3(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ()));
+		model = model * glm::mat4_cast(rotation);
 
-	//	gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
-	//	resourceManager.getModel("bunny")->render();
-	//}
+		gl::UniformMatrix4fv(program->getUniform("model"), 1, false, glm::value_ptr(model));
+		resourceManager.getModel("brick")->render();
+	}
 
 	if (shader != shadowmapShader) {
 		glm::mat4 model = glm::mat4(1.0);
@@ -533,7 +502,7 @@ void Game::mouseMove(int xrel, int yrel)
 
 void Game::mouseScroll(int yscroll)
 {
-	
+
 }
 
 void Game::focusLost()

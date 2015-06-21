@@ -467,11 +467,6 @@ void Game::drawGUI()
 {
 	static bool consoleEnabled = true;
 	static bool simpleTerrain = true;
-	static float m_suspensionStiffness = 10.f;
-	static float m_wheelsDampingRelaxation = 0.2f;
-	static float m_wheelsDampingCompression = 0.2f;;
-	static float m_frictionSlip = 10;
-	static float m_rollInfluence = 0.0f;
 
 	ImGui_SDL2_NewFrame();
 	ImGui::Text("Info");
@@ -491,23 +486,6 @@ void Game::drawGUI()
 	ImGui::Text("Physics");
 	ImGui::Checkbox("View debug", &viewPhysics);
 	ImGui::Checkbox("Pause", &physicsPaused);
-
-	ImGui::Text("Wheels");
-	ImGui::SliderFloat("m_suspensionStiffness", &m_suspensionStiffness, 0.f, 50.f);
-	ImGui::SliderFloat("m_wheelsDampingRelaxation", &m_wheelsDampingRelaxation, 0.f, 50.f);
-	ImGui::SliderFloat("m_wheelsDampingCompression", &m_wheelsDampingCompression, 0.f, 50.f);
-	ImGui::SliderFloat("m_frictionSlip", &m_frictionSlip, 0.f, 50.f);
-	ImGui::SliderFloat("m_rollInfluence", &m_rollInfluence, 0.f, 50.f);
-
-	for (int i = 0; i < crane.vehicle->getNumWheels(); i++)  {
-		btWheelInfo& wheel = crane.vehicle->getWheelInfo(i);
-		wheel.m_suspensionStiffness = m_suspensionStiffness;
-		wheel.m_wheelsDampingRelaxation = m_wheelsDampingRelaxation;
-		wheel.m_wheelsDampingCompression = m_wheelsDampingCompression;
-		wheel.m_frictionSlip = m_frictionSlip;
-		wheel.m_rollInfluence = m_rollInfluence;
-	}
-
 
 	if (consoleEnabled) {
 		ImGui::Begin("Console");

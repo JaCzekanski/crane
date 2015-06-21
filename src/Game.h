@@ -56,7 +56,7 @@ private:
 	glm::vec3 specular = glm::vec3(0.0, 0.0, 0.0);
 
 	// Physics
-	bool physicsPaused = true;
+	bool physicsPaused = false;
 	bool viewPhysics = true;
 	btDiscreteDynamicsWorld* dynamicsWorld;
 
@@ -65,7 +65,7 @@ private:
 	Crane crane;
 
 	// Temporary
-	std::string terrainModel = "simple_terrain";
+	std::string terrainModel = "terrain";
 	bool wireframe;
 	float fov = glm::radians(60.f);
 	glm::vec3 lightPosition;

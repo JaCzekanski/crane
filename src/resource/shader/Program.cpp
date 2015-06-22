@@ -38,8 +38,7 @@ bool Program::load()
 
 	GLuint id = link(newShaders);
 	if (id == 0) return false;
-
-
+	
 	shaders = std::move(newShaders);
 	programId = id;
 	initialized = true;
@@ -62,6 +61,15 @@ GLuint Program::link(std::vector<Shader> &shaders)
 		}
 		gl::AttachShader(id, s.get());
 	}
+
+	//layout(location = 0) in vec3 position;
+	//layout(location = 1) in vec3 normal;
+	//layout(location = 2) in vec2 texcoord;
+
+	gl::BindAttribLocation(id, 0, "position");
+	gl::BindAttribLocation(id, 1, "normal");
+	gl::BindAttribLocation(id, 2, "texcoord");
+
 	gl::LinkProgram(id);
 
 	GLint status;

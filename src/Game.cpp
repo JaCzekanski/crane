@@ -113,7 +113,7 @@ void Game::Run()
 			fpsTime = 0.f;
 		}
 
-		resourceManager.scanAndReload();
+		//resourceManager.scanAndReload();
 		Input(dt);
 		while (accumulator > TIME_STEP)
 		{

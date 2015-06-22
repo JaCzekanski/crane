@@ -136,9 +136,7 @@ void Game::initializePhysics()
 	dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
 
 	dynamicsWorld->setGravity(btVector3(0, -10, 0));
-
-	btAlignedObjectArray<btCollisionShape*> collisionShapes;
-
+	
 	for (auto obj : resourceManager.getModel(terrainModel)->objects)
 	{
 		btTriangleMesh *mesh = new btTriangleMesh();
@@ -160,8 +158,6 @@ void Game::initializePhysics()
 
 		btCollisionShape* ground = new btBvhTriangleMeshShape(mesh, true);
 
-		collisionShapes.push_back(ground);
-
 		btTransform tr;
 		tr.setIdentity();
 		btRigidBody* body = createRigidBody(0, tr, ground);
@@ -174,13 +170,11 @@ void Game::initializePhysics()
 
 	btCollisionShape* brick = new btBoxShape(btVector3(xScale* 0.5f, yScale* 0.5f, zScale* 0.5f));
 
-	collisionShapes.push_back(brick);
-
 	btTransform transform;
 	transform.setIdentity();
 
-	for (int y = 0; y < 15; y++)
-	for (int z = -10; z < 10; z++)
+	for (int y = 0; y < 10; y++)
+	for (int z = -2; z < 10; z++)
 	{
 		transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
 		auto body = createRigidBody(.01f, transform, brick);

@@ -66,7 +66,7 @@ private:
 	std::vector<btRigidBody*> wall;
 
 	// Temporary
-	bool consoleEnabled = true;
+	bool consoleEnabled = false;
 	bool showHelp = true;
 	std::string terrainModel = "terrain";
 	bool wireframe;

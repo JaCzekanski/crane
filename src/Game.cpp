@@ -504,7 +504,8 @@ void Game::drawGUI()
 	if (showHelp) {
 		ImGui::Begin("Pomoc", &showHelp);
 		ImGui::Text(
-			"Projekt na przedmiot \"Grafika komputerowa\" 2015\n"
+			"Projekt \"Crane\" 2015\n"
+			"Przedmiot \"Grafika komputerowa\"\n"
 			"Autorzy:\n"
 			"Jakub Czekanski\n"
 			"Sylwester Czmil\n\n"
@@ -514,7 +515,8 @@ void Game::drawGUI()
 			"LEWO, PRAWO - obrot w lewo, w prawo\n"
 			"X - obrot platformy w lewo\n"
 			"C - obrot platformy w prawo\n"
-			"W S A D Q Z - poruszanie kamera\n\n"
+			"W S A D Q Z - poruszanie kamera\n"
+
 			"Kliknij myszka 2x aby obracac kamera\n"
 			"Esc aby uwolnic myszke\n"
 			"2x esc aby zamknac program\n"

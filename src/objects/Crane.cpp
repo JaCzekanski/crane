@@ -218,6 +218,10 @@ void Crane::createPhysicsModel(btDiscreteDynamicsWorld *world)
 
 		btPoint2PointConstraint* hinge = new btPoint2PointConstraint(*arm, *ball, btVector3(0, 0, armSize.z*0.5), btVector3(0, 3.0, 0));
 		world->addConstraint(hinge, false);
+
+		tr.setIdentity();
+		tr.setOrigin(startPosition + btVector3(3.f, cabinSize.y*0.5 + baseSize.y*0.5 + 2.f, armSize.z * 1.1));
+		ball->setWorldTransform(tr);
 	}
 
 	btRaycastVehicle::btVehicleTuning tuning;

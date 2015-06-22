@@ -116,13 +116,16 @@ void Game::Run()
 
 		//resourceManager.scanAndReload();
 		Input(dt);
-		while (accumulator > TIME_STEP)
-		{
-			Step(TIME_STEP);
-			accumulator -= TIME_STEP;
+		if (everythingLoaded) {
+			while (accumulator > TIME_STEP)
+			{
+				Step(TIME_STEP);
+				accumulator -= TIME_STEP;
+			}
 		}
 		Render();
 		SDL_Delay(1);
+		everythingLoaded = true;
 	}
 
 }
@@ -181,7 +184,7 @@ void Game::generateBrickWall(int xCount, int yCount, int zCount)
 	for (int y = 0; y < yCount; y++)
 	for (int z = -zCount/2; z < zCount/2; z++)
 	{
-		transform.setOrigin(btVector3(-4.f - x*(xScale*1.1f), 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
+		transform.setOrigin(btVector3(-2.f - x*(xScale*1.1f), 0.f + y*(yScale*1.1f), 5.f + z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
 		auto body = createRigidBody(.01f, transform, brick);
 		body->setRestitution(0.0);
 		dynamicsWorld->addRigidBody(body);
@@ -414,9 +417,12 @@ void Game::Render()
 {
 	if (!isWindowFocused) // 3rd person camera
 	{
-		auto dir = convert(crane.base->getWorldTransform().getRotation());
+		auto q = convert(crane.base->getWorldTransform().getRotation());
 
-		camera.yaw = glm::yaw(dir);
+		float sp = -2.0f * (q.y*q.z - q.w*q.x);
+		if (sp == 1.0f)	camera.yaw = atan2f(-q.x*q.z + q.w*q.y, 0.5f - q.y*q.y - q.z*q.z);
+		else camera.yaw = atan2f(q.x*q.z + q.w*q.y, 0.5f - q.x*q.x - q.y*q.y);
+
 		camera.pitch = 0;
 
 		camera.direction = glm::vec3(

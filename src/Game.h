@@ -76,6 +76,7 @@ private:
 
 	// Setup
 	void initializePhysics();
+	void generateBrickWall(int xCount = 1, int yCount = 10, int zCount = 10);
 	void createShadowmap();
 
 	void Input(float dt);

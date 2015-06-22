@@ -66,6 +66,7 @@ Game::Game()
 	logger.Info("OpenGL version: %d.%d", gl::sys::GetMajorVersion(), gl::sys::GetMinorVersion());
 
 	initializePhysics();
+	generateBrickWall();
 	createShadowmap();
 
 	crane.createPhysicsModel(dynamicsWorld);
@@ -163,7 +164,10 @@ void Game::initializePhysics()
 		btRigidBody* body = createRigidBody(0, tr, ground);
 		dynamicsWorld->addRigidBody(body);
 	}
+}
 
+void Game::generateBrickWall(int xCount, int yCount, int zCount)
+{
 	const float xScale = 0.5f;
 	const float yScale = 0.5f;
 	const float zScale = 1.2f;
@@ -173,10 +177,11 @@ void Game::initializePhysics()
 	btTransform transform;
 	transform.setIdentity();
 
-	for (int y = 0; y < 10; y++)
-	for (int z = -2; z < 10; z++)
+	for (int x = 0; x < xCount; x++)
+	for (int y = 0; y < yCount; y++)
+	for (int z = -zCount/2; z < zCount/2; z++)
 	{
-		transform.setOrigin(btVector3(-4.f, 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
+		transform.setOrigin(btVector3(-4.f - x*(xScale*1.1f), 0.f + y*(yScale*1.1f), z*(zScale*1.01f) + (((y % 2) == 0) ? zScale*0.5f : 0)));
 		auto body = createRigidBody(.01f, transform, brick);
 		body->setRestitution(0.0);
 		dynamicsWorld->addRigidBody(body);
@@ -466,7 +471,26 @@ void Game::drawGUI()
 	ImGui::Checkbox("Tryb wireframe", &wireframe);
 	ImGui::SliderAngle("FOV", &fov, 45, 120);
 	
+	static int x=1, y = 10, z = 10;
+	bool reset = false;
+
 	ImGui::Text("Fizyka");
+	if (ImGui::Button("Reset sciany")) reset = true;
+	if (ImGui::SliderInt("x", &x, 1, 2)) reset = true;
+	if (ImGui::SliderInt("y", &y, 1, 10)) reset = true;
+	if (ImGui::SliderInt("z", &z, 1, 15)) reset = true;
+	
+	if (reset)
+	{
+		for (auto it = wall.begin(); it != wall.end();)
+		{
+			dynamicsWorld->removeRigidBody(*it);
+			delete *it;
+			it = wall.erase(it);
+		}
+		generateBrickWall(x, y, z);
+	}
+
 	ImGui::Checkbox("Pauza", &physicsPaused);
 	ImGui::Checkbox("Tryb debug", &viewPhysics);
 	ImGui::End();

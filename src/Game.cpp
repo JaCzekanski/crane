@@ -65,6 +65,9 @@ Game::Game()
 	logger.Info("Graphics card: %s", gl::GetString(gl::RENDERER));
 	logger.Info("OpenGL version: %d.%d", gl::sys::GetMajorVersion(), gl::sys::GetMinorVersion());
 
+
+	pad = SDL_GameControllerOpen(0);
+
 	initializePhysics();
 	generateBrickWall();
 	createShadowmap();
@@ -289,17 +292,25 @@ void Game::Input(float dt)
 		rightTrackSpeed += 700.f;
 		leftTrackSpeed -= 700.f;
 	}
+
+
+	rightTrackSpeed -= (SDL_GameControllerGetAxis(pad, SDL_CONTROLLER_AXIS_LEFTY) / 32767.5) * 1000.f;
+	leftTrackSpeed -= (SDL_GameControllerGetAxis(pad, SDL_CONTROLLER_AXIS_RIGHTY) / 32767.5) * 1000.f;
+
+	float left = (SDL_GameControllerGetAxis(pad, SDL_CONTROLLER_AXIS_TRIGGERLEFT) / 32767.5) * 1000.f;
+	float right = (SDL_GameControllerGetAxis(pad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) / 32767.5) * 1000.f;
+
 	if (leftTrackSpeed == 0 && rightTrackSpeed == 0) brake = 20.f;
 	
 	if (keys[SDL_SCANCODE_SPACE]) brake = 30.f;
 
-	if (keys[SDL_SCANCODE_X]) {
+	if (keys[SDL_SCANCODE_X] || (left > 100.f || left < -100.f)) {
 		crane.cabin->setFriction(0);
-		crane.cabin->applyTorque(btVector3(0, 1000, 0));
+		crane.cabin->applyTorque(btVector3(0, left, 0));
 	}
-	else if (keys[SDL_SCANCODE_C]) {
+	else if (keys[SDL_SCANCODE_C] || (right > 100.f || right < -100.f)) {
 		crane.cabin->setFriction(0);
-		crane.cabin->applyTorque(btVector3(0, -1000, 0));
+		crane.cabin->applyTorque(btVector3(0, -right, 0));
 	}
 	else crane.cabin->setFriction(50);
 

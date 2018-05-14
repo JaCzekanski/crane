@@ -38,6 +38,7 @@ private:
 	// SDL
 	SDL_Window *mainWindow;
 	bool isWindowFocused;
+	SDL_GameController * pad;
 
 	// OpenGL
 	SDL_GLContext glcontext;
